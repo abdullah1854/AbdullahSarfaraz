@@ -21,6 +21,8 @@
 
 import { CONTENT } from './content.js';
 
+let activeTechPitCleanup = null;
+
 // ---- colour helpers ---------------------------------------------------------
 function rgb(hex) {
   const h = (hex || '#9aa1b2').replace('#', '');
@@ -150,6 +152,11 @@ function monogram(label) {
 }
 
 export async function initTechPit() {
+  if (activeTechPitCleanup) {
+    activeTechPitCleanup();
+    activeTechPitCleanup = null;
+  }
+
   const anchor = document.getElementById('techpit') || document.getElementById('tech');
   const canvas = document.getElementById('tech-orbs-canvas');
   const legend = document.getElementById('tech-legend');
@@ -466,6 +473,11 @@ export async function initTechPit() {
   let physicsAwake = false;   // first tech visit: orbs stay pinned until cursor moves
   const pointer = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, inside: true };
   let lastPointerSample = { x: pointer.x, y: pointer.y };
+  const cleanupTasks = [];
+  const addListener = (target, type, listener, options) => {
+    target.addEventListener(type, listener, options);
+    cleanupTasks.push(() => target.removeEventListener(type, listener, options));
+  };
 
   let wakeBlend = 0;
 
@@ -544,10 +556,10 @@ export async function initTechPit() {
     drag = null;
     setOrbsInteractive(false);
   }
-  window.addEventListener('pointerdown', onPointerDown, { passive: false });
-  window.addEventListener('pointermove', onPointerMove, { passive: true });
-  window.addEventListener('pointerup', endDrag, { passive: true });
-  window.addEventListener('pointercancel', endDrag, { passive: true });
+  addListener(window, 'pointerdown', onPointerDown, { passive: false });
+  addListener(window, 'pointermove', onPointerMove, { passive: false });
+  addListener(window, 'pointerup', endDrag, { passive: true });
+  addListener(window, 'pointercancel', endDrag, { passive: true });
 
   // ---- render: blit each cached sprite at its INTERPOLATED position -----------
   // Positions are lerped between the last two physics ticks (alpha = leftover
@@ -726,18 +738,23 @@ export async function initTechPit() {
   draw(1);
   syncPresence();
   if ('IntersectionObserver' in window) {
-    new IntersectionObserver(queueSyncPresence, { threshold: [0, 0.2, 0.45], rootMargin: '0px' }).observe(anchor);
+    const observer = new IntersectionObserver(queueSyncPresence, { threshold: [0, 0.2, 0.45], rootMargin: '0px' });
+    observer.observe(anchor);
+    cleanupTasks.push(() => observer.disconnect());
   }
-  document.addEventListener('visibilitychange', queueSyncPresence);
-  window.addEventListener('scroll', markScrollActive, { passive: true });
-  window.addEventListener('hashchange', queueSyncPresence);
+  addListener(document, 'visibilitychange', queueSyncPresence);
+  addListener(window, 'scroll', markScrollActive, { passive: true });
+  addListener(window, 'hashchange', queueSyncPresence);
   const lenis = window.__lenis;
-  if (lenis && typeof lenis.on === 'function') lenis.on('scroll', markScrollActive);
+  if (lenis && typeof lenis.on === 'function') {
+    lenis.on('scroll', markScrollActive);
+    if (typeof lenis.off === 'function') cleanupTasks.push(() => lenis.off('scroll', markScrollActive));
+  }
   requestAnimationFrame(queueSyncPresence);
 
   // ---- resize (radii change → rebuild walls + sprites) ------------------------
   let rt;
-  window.addEventListener('resize', () => {
+  const onResize = () => {
     clearTimeout(rt);
     rt = setTimeout(() => {
       sizeCanvas();
@@ -756,7 +773,18 @@ export async function initTechPit() {
       });
       draw(1);
     }, 150);
-  });
+  };
+  addListener(window, 'resize', onResize);
+
+  activeTechPitCleanup = () => {
+    cleanupTasks.splice(0).forEach((cleanup) => cleanup());
+    clearTimeout(scrollIdleTimer);
+    clearTimeout(rt);
+    stop();
+    if (drag) endDrag();
+    canvas.classList.remove('is-visible', 'is-live', 'is-grabbing');
+    canvas.style.pointerEvents = 'none';
+  };
 }
 
 // ---- no-physics fallback ----------------------------------------------------
