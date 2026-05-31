@@ -110,6 +110,25 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth iframe { pointer-events: none; }
 
 /* ---- the persistent 3D character canvas ---------------------------------- */
+#tech-orbs-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  z-index: 2;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 420ms ease, visibility 420ms ease;
+  transform: translateZ(0);
+}
+#tech-orbs-canvas.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+#tech-orbs-canvas.is-grabbing { cursor: grabbing; }
+
 #webgl {
   position: fixed;
   inset: 0;
@@ -884,25 +903,30 @@ main { position: relative; z-index: 2; }
 /* =============================================================================
    Tech — pearl pit
    ============================================================================= */
-.tech__inner { display: flex; flex-direction: column; }
+.tech { position: relative; z-index: 3; }
+.tech__inner {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+.tech__inner a,
+.tech__inner button { pointer-events: auto; }
 .tech__sub { color: var(--muted); max-width: 50ch; margin: var(--space-4) 0 var(--space-6); line-height: var(--lh-body); font-size: var(--fs-lead); }
 .techpit {
   position: relative;
   width: 100%;
-  height: clamp(380px, 56vh, 560px);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  min-height: clamp(96px, 18vh, 180px);
 }
-.techpit canvas { width: 100%; height: 100%; display: block; cursor: grab; }
-.techpit canvas:active { cursor: grabbing; }
 .techpit__hint {
-  position: absolute;
-  right: 16px; bottom: 14px;
+  display: inline-flex;
   font-size: var(--fs-eyebrow);
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
   color: var(--muted);
   pointer-events: none;
+  opacity: 0.75;
 }
 .tech__legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.4rem; }
 .tech__legend.is-fallback { margin-top: 0; }
@@ -1058,11 +1082,7 @@ main { position: relative; z-index: 2; }
     flex: 1 1 auto;
     justify-content: center;
   }
-  .techpit {
-    height: clamp(300px, 50vh, 430px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(8, 12, 20, 0.26);
-  }
+  .techpit { min-height: clamp(88px, 16vh, 140px); }
   .resume-link { display: none; }
   .scroll-cue { display: none; }
   .tl-item { grid-template-columns: 1fr; gap: 0.5rem; }

@@ -221,7 +221,7 @@ export const CONTENT = {
   ],
 
   techHeading: 'My techstack',
-  techSubheading: 'Grab, throw, and inspect the stack I use to ship enterprise Dynamics and AI work.',
+  techSubheading: 'Move your cursor anywhere on screen — grab, throw, and inspect the stack I use to ship enterprise Dynamics and AI work.',
   techstack: [
     { label: 'D365 F&O', accent: '#7c3aed' },
     { label: 'X++', accent: '#60a5fa' },
