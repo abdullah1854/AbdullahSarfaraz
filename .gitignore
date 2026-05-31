@@ -1,0 +1,49 @@
+# ── OS / editor junk ────────────────────────────────────────────────────────
+.DS_Store
+*.swp
+*~
+Thumbs.db
+
+# ── Agent / tooling coordination state (not part of the site) ────────────────
+.bridgespace/
+.codex/
+.claude/
+.playwright-mcp/
+
+# ── Dev artifacts / generated outputs (kept on disk, out of VC) ──────────────
+output/
+OutPutWanted/
+
+# ── Future build tooling (Vite/npm) ─────────────────────────────────────────
+node_modules/
+dist/
+*.log
+.env
+.env.*
+.vite/
+
+# ── Design reference captures (not loaded at runtime) ────────────────────────
+hero-section.png
+tech-section.png
+tech-bouncy-balls.png
+
+# ── Character assets ─────────────────────────────────────────────────────────
+# assets/character/ is ~110 MB but only the gaze flipbook + sit portrait are used
+# at runtime (see js/scene.js GAZE_URLS + portrait-sit). Ignore everything in the
+# folder (backups, sources, unused poses, full-res PNGs) and re-include ONLY the
+# files the site actually loads. Nothing is deleted from disk — just untracked.
+assets/character/*
+!assets/character/head-00.webp
+!assets/character/head-01.webp
+!assets/character/head-02.webp
+!assets/character/head-03.webp
+!assets/character/head-04.webp
+!assets/character/head-05.webp
+!assets/character/head-06.webp
+!assets/character/head-07.webp
+!assets/character/head-08.webp
+!assets/character/head-09.webp
+!assets/character/head-10.webp
+!assets/character/head-11.webp
+!assets/character/head-12.webp
+!assets/character/portrait-sit.webp
