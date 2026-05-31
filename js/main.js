@@ -2,7 +2,7 @@
 // scroll motion, pearl tech pit, and the work carousel. The DOM is rendered FIRST
 // so the page is meaningful before any WebGL loads (and even if it never does).
 
-import { CONTENT } from './content.js?v=20260531-fluid-mobile';
+import { CONTENT } from './content.js?v=20260531-fullscreen-orbs';
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -387,15 +387,29 @@ async function boot() {
   const loaderGate = new Promise((resolve) => { releaseLoader = resolve; });
   runLoader(loaderGate);
 
+  // Warm matter-js in parallel with the WebGL scene so tech-pit init never blocks scroll.
+  const matterWarm = import('matter-js').catch(() => {});
+
   let scene = null;
   try {
     const canvas = document.getElementById('webgl');
     const supportsWebgl = (() => {
+      let probe = null;
+      let context = null;
       try {
-        const probe = document.createElement('canvas');
-        return !!(probe.getContext('webgl2') || probe.getContext('webgl'));
+        probe = document.createElement('canvas');
+        context = probe.getContext('webgl2') || probe.getContext('webgl');
+        const supported = !!context;
+        if (context) {
+          const loseContext = context.getExtension('WEBGL_lose_context');
+          if (loseContext) loseContext.loseContext();
+        }
+        return supported;
       } catch (_) {
         return false;
+      } finally {
+        context = null;
+        probe = null;
       }
     })();
     if (canvas && supportsWebgl) {
@@ -418,7 +432,8 @@ async function boot() {
   }
 
   try {
-    const { initTechPit } = await import('./techstack.js?v=20260531-fluid-mobile');
+    await matterWarm;
+    const { initTechPit } = await import('./techstack.js?v=20260531-first-approach');
     initTechPit();
   } catch (error) {
     console.warn('[main] tech pit unavailable.', error);

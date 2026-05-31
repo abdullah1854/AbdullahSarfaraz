@@ -63,7 +63,7 @@ export const CONTENT = {
         {
           title: 'Manager, IT System',
           period: 'Jul 2025 — Present',
-          duration: '4 mos',
+          duration: '11 mos',
           current: true,
           points: [
             'Spearheaded ERP and AI initiatives, aligning D365 F&O customization with business strategy.',
@@ -221,7 +221,7 @@ export const CONTENT = {
   ],
 
   techHeading: 'My techstack',
-  techSubheading: 'Grab, throw, and inspect the stack I use to ship enterprise Dynamics and AI work.',
+  techSubheading: 'Move your cursor anywhere on screen — grab, throw, and inspect the stack I use to ship enterprise Dynamics and AI work.',
   techstack: [
     { label: 'D365 F&O', accent: '#7c3aed' },
     { label: 'X++', accent: '#60a5fa' },

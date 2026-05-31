@@ -21,6 +21,8 @@
 
 import { CONTENT } from './content.js';
 
+let activeTechPitCleanup = null;
+
 // ---- colour helpers ---------------------------------------------------------
 function rgb(hex) {
   const h = (hex || '#9aa1b2').replace('#', '');
@@ -150,18 +152,23 @@ function monogram(label) {
 }
 
 export async function initTechPit() {
-  const wrap = document.getElementById('techpit');
-  const canvas = document.getElementById('techpit-canvas');
+  if (activeTechPitCleanup) {
+    activeTechPitCleanup();
+    activeTechPitCleanup = null;
+  }
+
+  const anchor = document.getElementById('techpit') || document.getElementById('tech');
+  const canvas = document.getElementById('tech-orbs-canvas');
   const legend = document.getElementById('tech-legend');
   const techs = CONTENT.techstack || [];
 
-  if (!wrap || !canvas || !techs.length) { showFallback(legend, techs, wrap); return; }
+  if (!canvas || !anchor || !techs.length) { showFallback(legend, techs, anchor); return; }
 
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('role', 'presentation');
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    showFallback(legend, techs, wrap);
+    showFallback(legend, techs, anchor);
     return;
   }
 
@@ -172,7 +179,7 @@ export async function initTechPit() {
     if (!Matter || !Matter.Engine) throw new Error('matter-js missing Engine');
   } catch (e) {
     console.warn('[techpit] matter-js unavailable — using chip-list fallback.', e);
-    showFallback(legend, techs, wrap);
+    showFallback(legend, techs, anchor);
     return;
   }
 
@@ -180,18 +187,19 @@ export async function initTechPit() {
   const wake = (body) => { if (Matter.Sleeping) Matter.Sleeping.set(body, false); else body.isSleeping = false; };
 
   const ctx = canvas.getContext('2d');
-  if (!ctx) { showFallback(legend, techs, wrap); return; }
+  if (!ctx) { showFallback(legend, techs, anchor); return; }
 
   const finePointer = window.matchMedia('(pointer: fine)').matches;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  // Cap DPR — full-viewport blits at 2.5× were the main scroll-jank source on first tech visit.
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const FONT = (px) => `700 ${px}px "Geist", system-ui, -apple-system, sans-serif`;
   const RESTITUTION = 0.58, THROW_SCALE = 0.92, MAX_THROW = 30, MAX_SPEED = 30;
 
-  let W = Math.max(1, wrap.clientWidth || 800);
-  let H = Math.max(1, wrap.clientHeight || 520);
+  let W = Math.max(1, window.innerWidth || 1280);
+  let H = Math.max(1, window.innerHeight || 800);
 
   const engine = Engine.create();
-  engine.gravity.y = 0.28;        // soft gravity; home springs below keep the cluster readable
+  engine.gravity.y = 0.12;        // light float — cursor repulsion does most of the motion
   engine.enableSleeping = false;
   // More solver passes → touching marbles in the cluster rest steadily instead of
   // micro-jittering against each other (cheap at ~12 bodies, real smoothness win).
@@ -199,7 +207,7 @@ export async function initTechPit() {
   engine.velocityIterations = 6;  // default 4
   const world = engine.world;
 
-  const sizeScale = () => Math.min(1, Math.max(0.6, Math.min(W, H) / 540));
+  const sizeScale = () => Math.min(1, Math.max(0.55, Math.min(W, H) / 760));
   function radiusFor(label) {
     ctx.font = FONT(16);
     const tw = ctx.measureText(label.replace(' · ', ' ')).width;
@@ -341,18 +349,33 @@ export async function initTechPit() {
 
   // ---- balls -----------------------------------------------------------------
   const balls = [];
+  // Cache the tech-panel rect — reading getBoundingClientRect inside the rAF loop
+  // forces layout during Lenis scroll and was a big part of the first-visit stutter.
+  let techZone = { x: 0, y: 0, w: 160, h: 120 };
+
+  function refreshTechZone() {
+    const r = anchor.getBoundingClientRect();
+    techZone = {
+      x: Math.max(12, r.left),
+      y: Math.max(72, r.top),
+      w: Math.max(160, Math.min(r.width, W - 24)),
+      h: Math.max(120, Math.min(r.height, H - 96)),
+    };
+  }
+
   function homeFor(index, radius) {
-    const cols = W < 520 ? 2 : W < 820 ? 3 : 4;
+    const zone = techZone;
+    const cols = W < 620 ? 3 : W < 980 ? 4 : 5;
     const rows = Math.ceil(techs.length / cols);
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const xRatio = cols === 1 ? 0.5 : 0.13 + (col / (cols - 1)) * 0.74;
-    const yRatio = rows === 1 ? 0.5 : 0.24 + (row / (rows - 1)) * 0.48;
-    const jitterX = (seededUnit(index + 1) - 0.5) * W * 0.035;
-    const jitterY = (seededUnit(index + 31) - 0.5) * H * 0.03;
+    const baseX = zone.x + zone.w * (0.35 + (col / Math.max(1, cols - 1)) * 0.58);
+    const baseY = zone.y + zone.h * (0.18 + (row / Math.max(1, rows - 1)) * 0.62);
+    const jitterX = (seededUnit(index + 1) - 0.5) * Math.min(160, zone.w * 0.2);
+    const jitterY = (seededUnit(index + 31) - 0.5) * Math.min(100, zone.h * 0.16);
     return {
-      x: Math.min(Math.max(W * xRatio + jitterX, radius), W - radius),
-      y: Math.min(Math.max(H * yRatio + jitterY, radius), H - radius),
+      x: Math.min(Math.max(baseX + jitterX, radius + 6), W - radius - 6),
+      y: Math.min(Math.max(baseY + jitterY, radius + 6), H - radius - 6),
     };
   }
 
@@ -367,9 +390,9 @@ export async function initTechPit() {
       const body = Bodies.circle(x, y, r, {
         restitution: RESTITUTION, friction: 0.05, frictionAir: 0.032, density: 0.0016, slop: 0.02,
       });
-      Body.setVelocity(body, { x: (seededUnit(i + 11) - 0.5) * 2.2, y: (seededUnit(i + 21) - 0.5) * 1.4 });
+      Body.setVelocity(body, { x: 0, y: 0 });
       const b = {
-        body, label: tch.label, accent: tch.accent || '#9aa1b2', r,
+        body, label: tch.label, accent: tch.accent || '#9aa1b2', r, homeIndex: i,
         home,
         phase: seededUnit(i + 41) * Math.PI * 2,
         icon: iconId(tch.label), mono: monogram(tch.label), patch: i % 3 === 1,
@@ -377,30 +400,18 @@ export async function initTechPit() {
         scale: 1, px: x, py: y,   // scale = eased focus zoom; px/py = last physics-tick pos (render interp)
       };
       buildSprite(b);
+      Body.setStatic(body, true);
       World.add(world, body);
       balls.push(b);
     });
   }
 
-  // ---- walls (floor raised so the settled cluster stays inside the panel) -----
-  let walls = [];
-  function buildWalls() {
-    walls.forEach((w) => World.remove(world, w));
-    const thick = 240;
-    const opt = { isStatic: true, restitution: 0.4, friction: 0.05 };
-    const floorTop = Math.min(H - 8, Math.round(H * 0.82));
-    walls = [
-      Bodies.rectangle(W / 2, floorTop + thick / 2, W + thick * 2, thick, opt), // floor
-      Bodies.rectangle(-thick / 2, H / 2, thick, H * 4, opt),                    // left
-      Bodies.rectangle(W + thick / 2, H / 2, thick, H * 4, opt),                 // right
-      Bodies.rectangle(W / 2, -thick / 2, W + thick * 2, thick, opt),            // ceiling (flings stay in)
-    ];
-    World.add(world, walls);
-  }
+  // ---- no hard walls — orbs roam the full viewport; soft edge springs in applyForces
+  function buildWalls() {}
 
   function sizeCanvas() {
-    W = Math.max(1, wrap.clientWidth);
-    H = Math.max(1, wrap.clientHeight);
+    W = Math.max(1, window.innerWidth);
+    H = Math.max(1, window.innerHeight);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     canvas.style.width = W + 'px';
@@ -408,26 +419,35 @@ export async function initTechPit() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // smooth the per-frame scaled sprite blits (hover pop + sub-pixel motion)
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = 'medium';
   }
 
   sizeCanvas();
   buildWalls();
-  // Canvas bakes the active font into each cached sprite, so wait for Geist before the
-  // first build (race a timeout so a slow/blocked font never hangs the section).
+  // Canvas bakes the active font into each cached sprite. Keep the wait short so
+  // a slow font cannot push sprite baking into the user's first tech-section scroll.
   try {
     await Promise.race([
       document.fonts && document.fonts.load
         ? Promise.all([document.fonts.load('800 24px "Geist"'), document.fonts.load('700 18px "Geist"')])
         : Promise.resolve(),
-      new Promise((resolve) => setTimeout(resolve, 1500)),
+      new Promise((resolve) => setTimeout(resolve, 280)),
     ]);
   } catch (e) { /* fall back to whatever font is resolved */ }
   buildBalls();
-  // If the race timed out before Geist arrived, rebuild the sprites once it settles so
-  // the labels are never stuck on the fallback face.
+  // If the race timed out before Geist arrived, refresh labels during idle time.
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => { balls.forEach(buildSprite); }).catch(() => {});
+    document.fonts.ready.then(() => {
+      const refreshSprites = () => {
+        balls.forEach(buildSprite);
+        if (!running) draw(1);
+      };
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(refreshSprites, { timeout: 900 });
+      } else {
+        setTimeout(refreshSprites, 80);
+      }
+    }).catch(() => {});
   }
 
   // ---- radial burst (click/tap on empty space) -------------------------------
@@ -448,15 +468,46 @@ export async function initTechPit() {
     }
   }
 
-  // ---- pointer: grab/throw (mouse + touch) + stir + click-burst ---------------
-  canvas.style.touchAction = 'pan-y';
+  // ---- pointer: global cursor repels orbs anywhere on screen ----------------
   let drag = null, hoverBall = null;
-  const pointer = { x: 0, y: 0, inside: false };
+  let physicsAwake = false;   // first tech visit: orbs stay pinned until cursor moves
+  const pointer = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, inside: true };
+  let lastPointerSample = { x: pointer.x, y: pointer.y };
+  const cleanupTasks = [];
+  const addListener = (target, type, listener, options) => {
+    target.addEventListener(type, listener, options);
+    cleanupTasks.push(() => target.removeEventListener(type, listener, options));
+  };
 
-  function toLocal(e) {
-    const rect = canvas.getBoundingClientRect();
-    return { x: (e.clientX - rect.left) * (W / rect.width), y: (e.clientY - rect.top) * (H / rect.height) };
+  let wakeBlend = 0;
+
+  function activatePhysics() {
+    if (physicsAwake) return;
+    physicsAwake = true;
+    wakeBlend = 0;
+    canvas.classList.add('is-live');
+    relayoutStaticHomes();
+    for (const b of balls) {
+      Body.setStatic(b.body, false);
+      Body.setVelocity(b.body, { x: 0, y: 0 });
+      b.px = b.body.position.x;
+      b.py = b.body.position.y;
+    }
+    if (isTechVisible() && !document.hidden) start();
   }
+
+  function toWorld(e) { return { x: e.clientX, y: e.clientY }; }
+  function isInteractiveTarget(target) {
+    return target && target.closest('a, button, input, textarea, select, [role="button"], .header, .nav, .social-rail, .resume-link, .work-carousel');
+  }
+  function isInsideTechSection(p) {
+    const r = anchor.getBoundingClientRect();
+    return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+  }
+  function shouldScopeDragToTechSection(e) {
+    return e.pointerType === 'touch' || e.pointerType === 'pen';
+  }
+  function setOrbsInteractive(on) { canvas.style.pointerEvents = on ? 'auto' : 'none'; }
   function ballAt(p) {
     for (let i = balls.length - 1; i >= 0; i--) {
       const b = balls[i];
@@ -465,27 +516,41 @@ export async function initTechPit() {
     }
     return null;
   }
-  canvas.addEventListener('pointerdown', (e) => {
-    const p = toLocal(e); pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
+  function onPointerDown(e) {
+    if (isInteractiveTarget(e.target)) return;
+    if (!physicsAwake && isTechVisible()) activatePhysics();
+    if (!physicsAwake) return;
+    const p = toWorld(e);
+    pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
     const b = ballAt(p);
-    if (!b) { if (finePointer) burst(p.x, p.y, 24); return; }
+    if (!b) { if (finePointer) burst(p.x, p.y, 22); return; }
+    if (shouldScopeDragToTechSection(e) && !isInsideTechSection(p)) return;
     e.preventDefault();
+    canvas.classList.add('is-grabbing');
     drag = { ball: b, offX: b.body.position.x - p.x, offY: b.body.position.y - p.y, tx: b.body.position.x, ty: b.body.position.y, vx: 0, vy: 0, id: e.pointerId, gx: p.x, gy: p.y, moved: false };
     wake(b.body);
-    try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    const p = toLocal(e); pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
+    setOrbsInteractive(true);
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  function onPointerMove(e) {
+    const p = toWorld(e);
+    if (!physicsAwake && isTechVisible() && Math.hypot(p.x - lastPointerSample.x, p.y - lastPointerSample.y) > 2) {
+      activatePhysics();
+    }
+    lastPointerSample.x = p.x;
+    lastPointerSample.y = p.y;
+    pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
     if (drag && e.pointerId === drag.id) {
       e.preventDefault();
       if (Math.hypot(p.x - drag.gx, p.y - drag.gy) > 6) drag.moved = true;
       const nx = p.x + drag.offX, ny = p.y + drag.offY;
       drag.vx = nx - drag.tx; drag.vy = ny - drag.ty; drag.tx = nx; drag.ty = ny;
-    } else if (finePointer) { hoverBall = ballAt(p); }
-  });
+    } else if (finePointer) hoverBall = ballAt(p);
+  }
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== drag.id)) return;
     const b = drag.ball; wake(b.body);
+    canvas.classList.remove('is-grabbing');
     if (!drag.moved) {
       Body.setVelocity(b.body, { x: (Math.random() - 0.5) * 6, y: -11 });
       burst(b.body.position.x, b.body.position.y, 13);
@@ -495,12 +560,14 @@ export async function initTechPit() {
         y: Math.max(-MAX_THROW, Math.min(MAX_THROW, drag.vy * THROW_SCALE)),
       });
     }
-    try { canvas.releasePointerCapture(drag.id); } catch (_) { /* ignore */ }
+    try { canvas.releasePointerCapture(drag.id); } catch (_) {}
     drag = null;
+    setOrbsInteractive(false);
   }
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
-  canvas.addEventListener('pointerleave', () => { pointer.inside = false; if (!drag) hoverBall = null; });
+  addListener(window, 'pointerdown', onPointerDown, { passive: false });
+  addListener(window, 'pointermove', onPointerMove, { passive: false });
+  addListener(window, 'pointerup', endDrag, { passive: true });
+  addListener(window, 'pointercancel', endDrag, { passive: true });
 
   // ---- render: blit each cached sprite at its INTERPOLATED position -----------
   // Positions are lerped between the last two physics ticks (alpha = leftover
@@ -523,27 +590,46 @@ export async function initTechPit() {
 
   // ---- ambient + cursor stir --------------------------------------------------
   let t = 0;
-  const STIR_RADIUS = () => Math.max(150, Math.min(W, H) * 0.36);
+  const STIR_RADIUS = () => Math.max(240, Math.min(W, H) * 0.45);
+
+  function relayoutStaticHomes() {
+    refreshTechZone();
+    for (const b of balls) {
+      b.home = homeFor(b.homeIndex, b.r);
+      const { x, y } = b.home;
+      Body.setPosition(b.body, { x, y });
+      b.px = x;
+      b.py = y;
+    }
+  }
+
+  function layoutStaticOrbs() {
+    for (const b of balls) {
+      const { x, y } = b.home;
+      b.px = x;
+      b.py = y;
+    }
+  }
+
   function applyForces() {
+    if (!physicsAwake) return;
+    wakeBlend = Math.min(1, wakeBlend + 0.04);
     const R = STIR_RADIUS();
     for (const b of balls) {
       if (drag && drag.ball === b) continue;
-      const body = b.body, pos = body.position, m = body.mass;
-      const sx = Math.cos(t * 0.6 + b.phase) * 0.00022;
-      const sy = Math.sin(t * 0.5 + b.phase * 1.3) * 0.00012;
-      Body.applyForce(body, pos, { x: sx * m * b.r, y: sy * m * b.r });
-      const homeDx = b.home.x - pos.x;
-      const homeDy = b.home.y - pos.y;
-      Body.applyForce(body, pos, { x: homeDx * 0.0000024 * m, y: homeDy * 0.0000024 * m });
-      if (pointer.inside) {
-        const dx = pos.x - pointer.x, dy = pos.y - pointer.y;
-        const d = Math.hypot(dx, dy);
-        if (d < R && d > 0.01) {
-          const f = (1 - d / R);
-          const push = f * f * 0.02 * m;
-          Body.applyForce(body, pos, { x: (dx / d) * push, y: (dy / d) * push });
-        }
+      const body = b.body, pos = body.position, m = body.mass, r = b.r;
+      const dx = pos.x - pointer.x, dy = pos.y - pointer.y;
+      const d = Math.hypot(dx, dy);
+      if (d < R && d > 0.01) {
+        const f = (1 - d / R);
+        const push = f * f * 0.058 * m * wakeBlend;
+        Body.applyForce(body, pos, { x: (dx / d) * push, y: (dy / d) * push });
       }
+      const pad = r + 8;
+      if (pos.x < pad) Body.applyForce(body, pos, { x: (pad - pos.x) * 0.00008 * m, y: 0 });
+      if (pos.x > W - pad) Body.applyForce(body, pos, { x: (W - pad - pos.x) * 0.00008 * m, y: 0 });
+      if (pos.y < pad) Body.applyForce(body, pos, { x: 0, y: (pad - pos.y) * 0.00008 * m });
+      if (pos.y > H - pad) Body.applyForce(body, pos, { x: 0, y: (H - pad - pos.y) * 0.00008 * m });
     }
   }
 
@@ -557,6 +643,7 @@ export async function initTechPit() {
   let raf = 0, running = false, last = 0, acc = 0;
 
   function step(dt) {
+    if (!physicsAwake) return;
     applyForces();
     Engine.update(engine, dt);
     if (drag) {
@@ -569,52 +656,118 @@ export async function initTechPit() {
     }
   }
 
+  // While the user is still scrolling toward tech (physics not yet awake), skip the
+  // full-viewport canvas pass so Lenis keeps the main thread — draw once scroll settles.
+  let scrollActive = false;
+  let scrollIdleTimer = 0;
+  function markScrollActive() {
+    scrollActive = true;
+    clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      scrollActive = false;
+      if (isTechVisible() && !document.hidden) {
+        relayoutStaticHomes();
+        draw(1);
+      }
+    }, 140);
+    queueSyncPresence();
+  }
+
   function frame(now) {
     if (!running) return;
+
+    // Static (pre-wake) path: paint once, then yield the main thread until input.
+    if (!physicsAwake) {
+      if (!scrollActive) { layoutStaticOrbs(); draw(1); }
+      running = false;
+      return;
+    }
+
     let elapsed = now - last; last = now;
     if (!(elapsed > 0)) elapsed = FIXED_DT;
     elapsed = Math.min(elapsed, 250);   // ignore huge gaps (tab refocus / GC pause)
     acc += elapsed;
-    t += elapsed / 1000;                // ambient stir runs on wall-clock time
+    t += elapsed / 1000;
 
     let steps = 0;
     while (acc >= FIXED_DT && steps < MAX_SUBSTEPS) {
-      // snapshot pre-step positions → render lerps from here to the post-step pos
       for (const b of balls) { b.px = b.body.position.x; b.py = b.body.position.y; }
       step(FIXED_DT);
       acc -= FIXED_DT;
       steps++;
     }
-    if (steps === MAX_SUBSTEPS) acc = 0;  // drop backlog after a long stall
+    if (steps === MAX_SUBSTEPS) acc = 0;
 
-    draw(acc / FIXED_DT);                 // interpolate the leftover tick fraction
+    draw(acc / FIXED_DT);
     raf = requestAnimationFrame(frame);
   }
   function start() { if (running) return; running = true; last = performance.now(); acc = 0; raf = requestAnimationFrame(frame); }
   function stop() { running = false; cancelAnimationFrame(raf); }
 
-  draw();
-
-  function onScreen() {
-    const rect = wrap.getBoundingClientRect();
-    return rect.top < window.innerHeight && rect.bottom > 0;
+  function isTechVisible() {
+    const r = anchor.getBoundingClientRect();
+    const vh = window.innerHeight || 800;
+    // Tighter band than before — don't spin up the canvas while work/contact are still on screen.
+    return r.bottom > vh * 0.12 && r.top < vh * 0.82;
   }
+
+  let syncQueued = false;
+  function queueSyncPresence() {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => { syncQueued = false; syncPresence(); });
+  }
+
+  function syncPresence() {
+    const show = isTechVisible() && !document.hidden;
+    canvas.classList.toggle('is-visible', show);
+    if (!show) {
+      stop();
+      hoverBall = null;
+      if (drag) endDrag();
+      return;
+    }
+    // First approach: wait until scroll inertia settles, then paint a static frame.
+    if (!physicsAwake && scrollActive) {
+      stop();
+      return;
+    }
+    if (!physicsAwake) {
+      relayoutStaticHomes();
+      draw(1);
+      stop();
+      return;
+    }
+    start();
+  }
+
+  refreshTechZone();
+  relayoutStaticHomes();
+  draw(1);
+  syncPresence();
   if ('IntersectionObserver' in window) {
-    new IntersectionObserver((entries) => {
-      entries.forEach((e) => (e.isIntersecting && !document.hidden ? start() : stop()));
-    }, { threshold: 0.06 }).observe(wrap);
-  } else { start(); }
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop(); else if (onScreen()) start();
-  });
+    const observer = new IntersectionObserver(queueSyncPresence, { threshold: [0, 0.2, 0.45], rootMargin: '0px' });
+    observer.observe(anchor);
+    cleanupTasks.push(() => observer.disconnect());
+  }
+  addListener(document, 'visibilitychange', queueSyncPresence);
+  addListener(window, 'scroll', markScrollActive, { passive: true });
+  addListener(window, 'hashchange', queueSyncPresence);
+  const lenis = window.__lenis;
+  if (lenis && typeof lenis.on === 'function') {
+    lenis.on('scroll', markScrollActive);
+    if (typeof lenis.off === 'function') cleanupTasks.push(() => lenis.off('scroll', markScrollActive));
+  }
+  requestAnimationFrame(queueSyncPresence);
 
   // ---- resize (radii change → rebuild walls + sprites) ------------------------
   let rt;
-  window.addEventListener('resize', () => {
+  const onResize = () => {
     clearTimeout(rt);
     rt = setTimeout(() => {
       sizeCanvas();
       buildWalls();
+      refreshTechZone();
       balls.forEach((b, i) => {
         const nr = radiusFor(b.label);
         if (Math.abs(nr - b.r) > 1) { b.r = nr; buildSprite(b); }
@@ -623,11 +776,23 @@ export async function initTechPit() {
         const nx = Math.min(Math.max(p.x, b.r), W - b.r);
         const ny = Math.min(Math.max(p.y, b.r), H - b.r);
         if (nx !== p.x || ny !== p.y) Body.setPosition(b.body, { x: nx, y: ny });
+        if (!physicsAwake) Body.setStatic(b.body, true);
         b.px = b.body.position.x; b.py = b.body.position.y; // resync interp snapshot (no streak)
       });
       draw(1);
     }, 150);
-  });
+  };
+  addListener(window, 'resize', onResize);
+
+  activeTechPitCleanup = () => {
+    cleanupTasks.splice(0).forEach((cleanup) => cleanup());
+    clearTimeout(scrollIdleTimer);
+    clearTimeout(rt);
+    stop();
+    if (drag) endDrag();
+    canvas.classList.remove('is-visible', 'is-live', 'is-grabbing');
+    canvas.style.pointerEvents = 'none';
+  };
 }
 
 // ---- no-physics fallback ----------------------------------------------------
