@@ -116,6 +116,11 @@ function makeAuraTexture() {
 
 export function createScene(canvas) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  canvas.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    document.documentElement.classList.add('no-webgl-scene');
+  }, { passive: false });
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -124,7 +129,7 @@ export function createScene(canvas) {
     powerPreference: 'high-performance',
   });
   renderer.setClearColor(0x000000, 0);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.65 : 2.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -282,20 +287,21 @@ export function createScene(canvas) {
     camera.top = frustum / 2;
     camera.bottom = -frustum / 2;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, w < 760 ? 1.65 : 2.5));
     renderer.setSize(w, h);
 
     // On phones the section-park x offsets (tuned for the wide desktop camera)
     // would shove the figure off-screen, so pull parks toward center, shrink it,
     // and damp the (touch-absent) mouse parallax. Also tame ultra-wide.
     const small = w < 760;
-    const verySmall = w < 480;  // aligned with CSS @media (max-width:480px) for coordinated ruthless mobile reduction
+    const verySmall = w < 480;  // aligned with CSS @media (max-width:480px) for coordinated phone-scale framing
     responsive.small = small;
     responsive.verySmall = verySmall;
-    responsive.parkX = small ? (verySmall ? 0.08 : 0.13) : (aspect > 2.1 ? 0.58 : 1);
-    responsive.sizeMul = verySmall ? 0.62 : small ? 0.78 : w < 1100 ? 0.91 : 1;
-    responsive.mouseMul = verySmall ? 0.22 : small ? 0.38 : 1;
-    responsive.heroY = verySmall ? -1.55 : small ? -1.05 : 0;
-    responsive.heroDim = verySmall ? 0.68 : small ? 0.78 : 1;
+    responsive.parkX = small ? (verySmall ? 0.16 : 0.2) : (aspect > 2.1 ? 0.58 : 1);
+    responsive.sizeMul = verySmall ? 0.7 : small ? 0.8 : w < 1100 ? 0.91 : 1;
+    responsive.mouseMul = verySmall ? 0.28 : small ? 0.42 : 1;
+    responsive.heroY = verySmall ? -1.68 : small ? -1.12 : 0;
+    responsive.heroDim = verySmall ? 0.86 : small ? 0.88 : 1;
   }
 
   function frame() {
@@ -306,6 +312,13 @@ export function createScene(canvas) {
     state.mouseX = lerp(state.mouseX, state.mouseTX, 0.18);
     state.mouseY = lerp(state.mouseY, state.mouseTY, 0.18);
     state.scroll = lerp(state.scroll, state.scrollT, 0.08);
+
+    if (coarsePointer && !reducedMotion) {
+      // Phones have no persistent cursor, so give the same gaze system a gentle
+      // autonomous target; touchmove still overrides it immediately.
+      state.mouseTX = lerp(state.mouseTX, Math.sin(time * 0.42) * 0.42, 0.015);
+      state.mouseTY = lerp(state.mouseTY, Math.sin(time * 0.33 + 0.8) * 0.22, 0.015);
+    }
 
     state.x = lerp(state.x, target.x, 0.09);
     state.y = lerp(state.y, target.y, 0.09);

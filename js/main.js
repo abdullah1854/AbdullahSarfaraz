@@ -2,7 +2,7 @@
 // scroll motion, pearl tech pit, and the work carousel. The DOM is rendered FIRST
 // so the page is meaningful before any WebGL loads (and even if it never does).
 
-import { CONTENT } from './content.js?v=20260531-mobile';
+import { CONTENT } from './content.js?v=20260531-fluid-mobile';
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -390,27 +390,35 @@ async function boot() {
   let scene = null;
   try {
     const canvas = document.getElementById('webgl');
-    const mobilePortraitMode = window.matchMedia('(max-width: 760px)').matches;
-    if (canvas && !mobilePortraitMode) {
-      const { createScene } = await import('./scene.js?v=20260531-mobile');
+    const supportsWebgl = (() => {
+      try {
+        const probe = document.createElement('canvas');
+        return !!(probe.getContext('webgl2') || probe.getContext('webgl'));
+      } catch (_) {
+        return false;
+      }
+    })();
+    if (canvas && supportsWebgl) {
+      const { createScene } = await import('./scene.js?v=20260531-fluid-mobile');
       scene = createScene(canvas);
-    } else if (mobilePortraitMode) {
-      document.documentElement.classList.add('mobile-portrait-mode');
+    } else {
+      document.documentElement.classList.add('no-webgl-scene');
     }
   } catch (error) {
+    document.documentElement.classList.add('no-webgl-scene');
     console.warn('[main] character scene unavailable.', error);
   }
   Promise.race([scene?.ready || Promise.resolve(), wait(2600)]).finally(releaseLoader);
 
   try {
-    const { initAnimations } = await import('./animations.js?v=20260531-mobile');
+    const { initAnimations } = await import('./animations.js?v=20260531-fluid-mobile');
     await initAnimations(scene || { setScrollProgress() {}, setSection() {}, setMouse() {}, revealTech() {}, resize() {} });
   } catch (error) {
     console.warn('[main] animations unavailable.', error);
   }
 
   try {
-    const { initTechPit } = await import('./techstack.js?v=20260531-mobile');
+    const { initTechPit } = await import('./techstack.js?v=20260531-fluid-mobile');
     initTechPit();
   } catch (error) {
     console.warn('[main] tech pit unavailable.', error);
@@ -418,16 +426,17 @@ async function boot() {
 
   if (scene) {
     window.addEventListener('resize', () => scene.resize(), { passive: true });
-    window.addEventListener(
-      'pointermove',
-      (event) => {
-        scene.setMouse(
-          (event.clientX / window.innerWidth) * 2 - 1,
-          (event.clientY / window.innerHeight) * 2 - 1
-        );
-      },
-      { passive: true }
-    );
+    const syncPointer = (x, y) => {
+      scene.setMouse(
+        (x / window.innerWidth) * 2 - 1,
+        (y / window.innerHeight) * 2 - 1
+      );
+    };
+    window.addEventListener('pointermove', (event) => syncPointer(event.clientX, event.clientY), { passive: true });
+    window.addEventListener('touchmove', (event) => {
+      const touch = event.touches && event.touches[0];
+      if (touch) syncPointer(touch.clientX, touch.clientY);
+    }, { passive: true });
   }
 }
 

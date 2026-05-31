@@ -113,8 +113,8 @@ html.lenis, html.lenis body { height: auto; }
 #webgl {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100dvw;
+  height: 100dvh;
   z-index: 1;
   display: block;
   pointer-events: none;
@@ -165,6 +165,7 @@ html.lenis, html.lenis body { height: auto; }
   transition: opacity 620ms ease, visibility 620ms ease;
 }
 .loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader.is-done .loader__marquee { display: none; }
 
 .loader__marquee {
   position: absolute;
@@ -468,7 +469,6 @@ main { position: relative; z-index: 2; }
 }
 .hero__left { justify-self: start; max-width: 580px; min-width: 0; }
 .hero__right { justify-self: start; text-align: left; max-width: 540px; min-width: 0; }
-.mobile-portrait { display: none; }
 
 .hero__eyebrow {
   display: inline-flex;
@@ -578,6 +578,7 @@ main { position: relative; z-index: 2; }
   position: absolute;
   left: 0; bottom: clamp(18px, 5vh, 48px);
   width: 100%;
+  overflow: hidden;
   display: flex;
   gap: 2.2rem;
   white-space: nowrap;
@@ -1033,7 +1034,7 @@ main { position: relative; z-index: 2; }
 }
 
 @media (max-width: 760px) {
-  #webgl { display: none; }
+  #webgl { opacity: 0.88; }
   .header {
     background: linear-gradient(180deg, rgba(5, 8, 16, 0.94), rgba(5, 8, 16, 0.72) 72%, transparent);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -1045,63 +1046,6 @@ main { position: relative; z-index: 2; }
   /* hero layout itself is governed by the flex column at <=900px; only hide the
      decorative ticker here so it can't sit under the stacked text */
   .hero__ticker { display: none; }
-  .mobile-portrait {
-    position: relative;
-    display: grid;
-    align-self: center;
-    place-items: end center;
-    width: min(76vw, 320px);
-    height: clamp(220px, 38vh, 300px);
-    margin: 0.1rem auto 0.15rem;
-    overflow: hidden;
-    isolation: isolate;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
-    background:
-      linear-gradient(145deg, rgba(94, 234, 212, 0.13), transparent 42%),
-      linear-gradient(330deg, rgba(255, 79, 216, 0.13), transparent 48%),
-      rgba(8, 12, 20, 0.62);
-    box-shadow:
-      0 20px 56px rgba(0, 0, 0, 0.48),
-      0 0 0 1px rgba(94, 234, 212, 0.08) inset;
-    backdrop-filter: blur(12px);
-  }
-  .mobile-portrait::before {
-    content: '';
-    position: absolute;
-    inset: auto 8% -1px;
-    height: 38%;
-    z-index: 0;
-    pointer-events: none;
-    background: linear-gradient(180deg, transparent, rgba(94, 234, 212, 0.16));
-    filter: blur(12px);
-    opacity: 0.78;
-  }
-  .mobile-portrait::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 18%),
-      linear-gradient(90deg, rgba(94, 234, 212, 0.18), transparent 26%, transparent 74%, rgba(255, 79, 216, 0.16));
-    mix-blend-mode: screen;
-    opacity: 0.6;
-  }
-  .mobile-portrait__image {
-    position: relative;
-    z-index: 1;
-    width: 116%;
-    height: 116%;
-    max-width: none;
-    object-fit: contain;
-    object-position: center bottom;
-    transform: translateY(5%);
-    filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.42)) saturate(1.08) contrast(1.04);
-    animation: mobile-portrait-breathe 5.2s ease-in-out infinite;
-    will-change: transform, filter;
-  }
   .hero__stats {
     border-radius: 16px;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
@@ -1173,11 +1117,8 @@ main { position: relative; z-index: 2; }
   .hero { padding-top: clamp(106px, 15vh, 132px); padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
   .hero__eyebrow { margin-bottom: 0.85rem; }
   .hero__subtitle { margin-top: var(--space-3); max-width: 100%; }
-  .mobile-portrait {
-    width: min(82vw, 304px);
-    height: clamp(200px, 30vh, 238px);
-    margin-top: -0.2rem;
-  }
+  .hero__right { margin-bottom: clamp(132px, 24vh, 178px); }
+  .no-webgl-scene .hero__right { margin-bottom: 0; }
   .hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero__stat { padding: 13px 6px; }
   .hero__stat-label { letter-spacing: 0.12em; }
@@ -1201,15 +1142,4 @@ main { position: relative; z-index: 2; }
   [data-reveal] { opacity: 1 !important; transform: none !important; }
   /* rest the looping decorative transforms in place instead of a shifted end-state */
   .loader__marquee, .hero__ticker-track, .scroll-cue i { animation: none !important; transform: none !important; }
-}
-
-@keyframes mobile-portrait-breathe {
-  0%, 100% {
-    transform: translateY(5%) scale(1);
-    filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.42)) saturate(1.08) contrast(1.04);
-  }
-  50% {
-    transform: translateY(2.5%) scale(1.018);
-    filter: drop-shadow(0 20px 38px rgba(94, 234, 212, 0.14)) saturate(1.13) contrast(1.06);
-  }
 }
