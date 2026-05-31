@@ -95,7 +95,7 @@ export async function initAnimations(scene) {
 
   const heroLines = gsap.utils.toArray('.hero__name-line > span');
   gsap.set(heroLines, { yPercent: 110 });
-  gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.hero__stats'], { opacity: 0, y: 22 });
+  gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.mobile-portrait', '.hero__stats'], { opacity: 0, y: 22 });
 
   gsap.timeline({ delay: 0.18 })
     .to('.hero__eyebrow', { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' })
@@ -103,13 +103,14 @@ export async function initAnimations(scene) {
     .to('.hero__role-top', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.55')
     .to('.hero__role-big', { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out' }, '-=0.45')
     .to('.hero__subtitle', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.5')
-    .to('.hero__stats', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.45');
+    .to('.mobile-portrait', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.4')
+    .to('.hero__stats', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.42');
 
   // Safety net: setTimeout fires even when rAF (the GSAP ticker) is throttled in a
   // backgrounded/inactive tab, so the hero copy can never get stuck hidden.
   setTimeout(() => {
     gsap.set(heroLines, { yPercent: 0 });
-    gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.hero__stats'], { opacity: 1, y: 0 });
+    gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.mobile-portrait', '.hero__stats'], { opacity: 1, y: 0 });
   }, 2400);
 
   gsap.utils.toArray('[data-reveal]').forEach((element) => {

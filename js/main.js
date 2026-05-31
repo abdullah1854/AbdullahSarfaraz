@@ -2,7 +2,7 @@
 // scroll motion, pearl tech pit, and the work carousel. The DOM is rendered FIRST
 // so the page is meaningful before any WebGL loads (and even if it never does).
 
-import { CONTENT } from './content.js';
+import { CONTENT } from './content.js?v=20260531-mobile';
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -389,23 +389,28 @@ async function boot() {
 
   let scene = null;
   try {
-    const { createScene } = await import('./scene.js');
     const canvas = document.getElementById('webgl');
-    if (canvas) scene = createScene(canvas);
+    const mobilePortraitMode = window.matchMedia('(max-width: 760px)').matches;
+    if (canvas && !mobilePortraitMode) {
+      const { createScene } = await import('./scene.js?v=20260531-mobile');
+      scene = createScene(canvas);
+    } else if (mobilePortraitMode) {
+      document.documentElement.classList.add('mobile-portrait-mode');
+    }
   } catch (error) {
     console.warn('[main] character scene unavailable.', error);
   }
   Promise.race([scene?.ready || Promise.resolve(), wait(2600)]).finally(releaseLoader);
 
   try {
-    const { initAnimations } = await import('./animations.js');
+    const { initAnimations } = await import('./animations.js?v=20260531-mobile');
     await initAnimations(scene || { setScrollProgress() {}, setSection() {}, setMouse() {}, revealTech() {}, resize() {} });
   } catch (error) {
     console.warn('[main] animations unavailable.', error);
   }
 
   try {
-    const { initTechPit } = await import('./techstack.js');
+    const { initTechPit } = await import('./techstack.js?v=20260531-mobile');
     initTechPit();
   } catch (error) {
     console.warn('[main] tech pit unavailable.', error);
