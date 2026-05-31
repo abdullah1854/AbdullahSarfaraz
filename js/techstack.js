@@ -157,18 +157,19 @@ export async function initTechPit() {
     activeTechPitCleanup = null;
   }
 
-  const anchor = document.getElementById('techpit') || document.getElementById('tech');
+  const techPit = document.getElementById('techpit');
+  const anchor = techPit || document.getElementById('tech');
   const canvas = document.getElementById('tech-orbs-canvas');
   const legend = document.getElementById('tech-legend');
   const techs = CONTENT.techstack || [];
 
-  if (!canvas || !anchor || !techs.length) { showFallback(legend, techs, anchor); return; }
+  if (!canvas || !anchor || !techs.length) { showFallback(legend, techs, techPit); return; }
 
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('role', 'presentation');
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    showFallback(legend, techs, anchor);
+    showFallback(legend, techs, techPit);
     return;
   }
 
@@ -179,7 +180,7 @@ export async function initTechPit() {
     if (!Matter || !Matter.Engine) throw new Error('matter-js missing Engine');
   } catch (e) {
     console.warn('[techpit] matter-js unavailable — using chip-list fallback.', e);
-    showFallback(legend, techs, anchor);
+    showFallback(legend, techs, techPit);
     return;
   }
 
@@ -187,7 +188,7 @@ export async function initTechPit() {
   const wake = (body) => { if (Matter.Sleeping) Matter.Sleeping.set(body, false); else body.isSleeping = false; };
 
   const ctx = canvas.getContext('2d');
-  if (!ctx) { showFallback(legend, techs, anchor); return; }
+  if (!ctx) { showFallback(legend, techs, techPit); return; }
 
   const finePointer = window.matchMedia('(pointer: fine)').matches;
   // Cap DPR — full-viewport blits at 2.5× were the main scroll-jank source on first tech visit.
