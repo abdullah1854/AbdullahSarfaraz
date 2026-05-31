@@ -208,12 +208,12 @@ export async function initTechPit() {
   engine.velocityIterations = 6;  // default 4
   const world = engine.world;
 
-  const sizeScale = () => Math.min(1, Math.max(0.55, Math.min(W, H) / 760));
+  const sizeScale = () => Math.min(1, Math.max(0.52, Math.min(W, H) / 900));
   function radiusFor(label) {
     ctx.font = FONT(16);
     const tw = ctx.measureText(label.replace(' · ', ' ')).width;
-    const longLabelBoost = label.length >= 10 ? 12 : 0;
-    return Math.max(50, Math.min(112, tw / 1.45 + 46 + longLabelBoost)) * sizeScale();
+    const longLabelBoost = label.length >= 10 ? 10 : 0;
+    return Math.max(42, Math.min(86, tw / 1.65 + 38 + longLabelBoost)) * sizeScale();
   }
 
   // ---- sprite cache: render one pearl marble (+logo+wordmark) per ball -------
@@ -356,11 +356,14 @@ export async function initTechPit() {
 
   function refreshTechZone() {
     const r = anchor.getBoundingClientRect();
+    const topInset = Math.min(118, Math.max(64, r.height * 0.18));
+    const top = Math.max(72, r.top + topInset);
+    const bottom = Math.min(H - 24, r.bottom);
     techZone = {
       x: Math.max(12, r.left),
-      y: Math.max(72, r.top),
+      y: top,
       w: Math.max(160, Math.min(r.width, W - 24)),
-      h: Math.max(120, Math.min(r.height, H - 96)),
+      h: Math.max(180, Math.min(Math.max(120, bottom - top), H - top - 24)),
     };
   }
 
@@ -370,13 +373,14 @@ export async function initTechPit() {
     const rows = Math.ceil(techs.length / cols);
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const baseX = zone.x + zone.w * (0.35 + (col / Math.max(1, cols - 1)) * 0.58);
-    const baseY = zone.y + zone.h * (0.18 + (row / Math.max(1, rows - 1)) * 0.62);
+    const baseX = zone.x + zone.w * (0.16 + (col / Math.max(1, cols - 1)) * 0.68);
+    const baseY = zone.y + zone.h * (0.22 + (row / Math.max(1, rows - 1)) * 0.55);
     const jitterX = (seededUnit(index + 1) - 0.5) * Math.min(160, zone.w * 0.2);
     const jitterY = (seededUnit(index + 31) - 0.5) * Math.min(100, zone.h * 0.16);
+    const drawRadius = radius * 1.42 + 6;
     return {
-      x: Math.min(Math.max(baseX + jitterX, radius + 6), W - radius - 6),
-      y: Math.min(Math.max(baseY + jitterY, radius + 6), H - radius - 6),
+      x: Math.min(Math.max(baseX + jitterX, drawRadius), W - drawRadius),
+      y: Math.min(Math.max(baseY + jitterY, drawRadius), H - drawRadius),
     };
   }
 
@@ -626,7 +630,7 @@ export async function initTechPit() {
         const push = f * f * 0.058 * m * wakeBlend;
         Body.applyForce(body, pos, { x: (dx / d) * push, y: (dy / d) * push });
       }
-      const pad = r + 8;
+      const pad = r * 1.42 + 8;
       if (pos.x < pad) Body.applyForce(body, pos, { x: (pad - pos.x) * 0.00008 * m, y: 0 });
       if (pos.x > W - pad) Body.applyForce(body, pos, { x: (W - pad - pos.x) * 0.00008 * m, y: 0 });
       if (pos.y < pad) Body.applyForce(body, pos, { x: 0, y: (pad - pos.y) * 0.00008 * m });
@@ -652,7 +656,20 @@ export async function initTechPit() {
       Body.setVelocity(drag.ball.body, { x: 0, y: 0 });
     }
     for (const b of balls) {
-      const v = b.body.velocity, s = Math.hypot(v.x, v.y);
+      const pos = b.body.position;
+      const visiblePad = b.r * 1.42 + 8;
+      const nx = Math.min(Math.max(pos.x, visiblePad), W - visiblePad);
+      const ny = Math.min(Math.max(pos.y, visiblePad), H - visiblePad);
+      let v = b.body.velocity;
+      if (nx !== pos.x || ny !== pos.y) {
+        Body.setPosition(b.body, { x: nx, y: ny });
+        Body.setVelocity(b.body, {
+          x: nx !== pos.x ? v.x * -0.28 : v.x,
+          y: ny !== pos.y ? v.y * -0.28 : v.y,
+        });
+        v = b.body.velocity;
+      }
+      const s = Math.hypot(v.x, v.y);
       if (s > MAX_SPEED) Body.setVelocity(b.body, { x: (v.x / s) * MAX_SPEED, y: (v.y / s) * MAX_SPEED });
     }
   }

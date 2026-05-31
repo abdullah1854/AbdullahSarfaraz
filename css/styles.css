@@ -917,7 +917,7 @@ main { position: relative; z-index: 2; }
 .techpit {
   position: relative;
   width: 100%;
-  min-height: clamp(96px, 18vh, 180px);
+  min-height: clamp(300px, 44vh, 420px);
 }
 .techpit__hint {
   display: inline-flex;
@@ -1082,7 +1082,7 @@ main { position: relative; z-index: 2; }
     flex: 1 1 auto;
     justify-content: center;
   }
-  .techpit { min-height: clamp(88px, 16vh, 140px); }
+  .techpit { min-height: clamp(280px, 42vh, 360px); }
   .resume-link { display: none; }
   .scroll-cue { display: none; }
   .tl-item { grid-template-columns: 1fr; gap: 0.5rem; }

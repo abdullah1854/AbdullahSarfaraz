@@ -2,7 +2,7 @@
 // scroll motion, pearl tech pit, and the work carousel. The DOM is rendered FIRST
 // so the page is meaningful before any WebGL loads (and even if it never does).
 
-import { CONTENT } from './content.js?v=20260531-fullscreen-orbs';
+import { CONTENT } from './content.js?v=20260531-techstack-layout';
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -433,7 +433,7 @@ async function boot() {
 
   try {
     await matterWarm;
-    const { initTechPit } = await import('./techstack.js?v=20260531-first-approach');
+    const { initTechPit } = await import('./techstack.js?v=20260531-techstack-layout');
     initTechPit();
   } catch (error) {
     console.warn('[main] tech pit unavailable.', error);
