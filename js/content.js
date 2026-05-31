@@ -187,9 +187,9 @@ export const CONTENT = {
       type: 'Web App',
       number: '03',
       description:
-        'A home kitchen-garden planner — track what to plant, when to water, and when to harvest across the growing season.',
-      stack: 'JavaScript · HTML · CSS',
-      points: ['Plant & watering schedule', 'Seasonal planting guide', 'Lightweight, no-login tracker'],
+        'A dynamic plant-care scheduler based on the Kitchen Garden Fertilizer guide — generates a personalized 6-to-12-month care calendar and auto-resolves conflicts between incompatible treatments.',
+      stack: 'JavaScript · HTML · CSS · PWA',
+      points: ['Personalized 6–12 month care calendar', 'Smart treatment-conflict resolution', 'Installable PWA — no manual date tracking'],
     },
     {
       title: 'D365 F&O Intelligent Automation Framework',
