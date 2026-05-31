@@ -413,7 +413,7 @@ async function boot() {
       }
     })();
     if (canvas && supportsWebgl) {
-      const { createScene } = await import('./scene.js?v=20260531-fluid-mobile');
+      const { createScene } = await import('./scene.js?v=20260531-tech-avatar');
       scene = createScene(canvas);
     } else {
       document.documentElement.classList.add('no-webgl-scene');

@@ -248,20 +248,21 @@ export function createScene(canvas) {
 
   // ---- per-section stage states --------------------------------------------
   // x/y in world units, scale multiplies the base plane, sit = standing↔sitting
-  // cross-fade (0 standing, 1 sitting), dim = overall character presence.
+  // cross-fade (0 standing, 1 sitting), dim = overall character presence, follow
+  // controls how much the parked body drifts with the cursor in that section.
   const states = {
-    hero: { x: 0.05, y: -0.04, scale: 0.97, sit: 0, dim: 1.0 },
-    about: { x: -2.05, y: -0.03, scale: 0.78, sit: 0, dim: 0.38 },
-    career: { x: -2.68, y: -0.62, scale: 0.76, sit: 1, dim: 0.58 },  // extra clearance + lower presence so timeline text/glow line read cleanly without overlap or ring competition
-    work: { x: 1.48, y: 0.08, scale: 0.62, sit: 0, dim: 0.22 },  // further receded + left for elegant non-competing share with floating card lower body
-    tech: { x: -2.8, y: -0.1, scale: 0.7, sit: 0, dim: 0.0 },
-    contact: { x: 1.35, y: -0.01, scale: 0.62, sit: 0, dim: 0.26 },
+    hero: { x: 0.05, y: -0.04, scale: 0.97, sit: 0, dim: 1.0, follow: 1.0 },
+    about: { x: -2.05, y: -0.03, scale: 0.78, sit: 0, dim: 0.38, follow: 0.8 },
+    career: { x: -2.68, y: -0.62, scale: 0.76, sit: 1, dim: 0.58, follow: 0.75 },  // extra clearance + lower presence so timeline text/glow line read cleanly without overlap or ring competition
+    work: { x: 1.48, y: 0.08, scale: 0.62, sit: 0, dim: 0.22, follow: 0.75 },  // further receded + left for elegant non-competing share with floating card lower body
+    tech: { x: 0.32, y: -0.48, scale: 0.66, sit: 0, dim: 0.34, follow: 1.65 },
+    contact: { x: 1.35, y: -0.01, scale: 0.62, sit: 0, dim: 0.26, follow: 0.75 },
   };
 
   const state = {
     mouseX: 0, mouseY: 0, mouseTX: 0, mouseTY: 0,
     scroll: 0, scrollT: 0,
-    x: 0.05, y: -0.04, scale: 0.97, sit: 0, dim: 0,  // aligned to current states.hero after polish tuning
+    x: 0.05, y: -0.04, scale: 0.97, sit: 0, dim: 0, follow: 1,  // aligned to current states.hero after polish tuning
     gazeIndex: -1,  // held crisp frame index; -1 = uninitialised → snaps to first target
   };
   let target = { ...states.hero };
@@ -325,12 +326,15 @@ export function createScene(canvas) {
     state.scale = lerp(state.scale, target.scale, 0.09);
     state.sit = lerp(state.sit, target.sit, 0.09);
     state.dim = lerp(state.dim, target.dim, 0.08);
+    state.follow = lerp(state.follow, target.follow ?? 1, 0.08);
 
     // On phones, recede the figure to an ambient backdrop in text-heavy sections
     // so the overlaid copy stays readable. More aggressive on very small.
     const heroMobile = responsive.small && currentSection === 'hero';
     const dimMul = heroMobile
       ? responsive.heroDim
+      : responsive.small && currentSection === 'tech'
+        ? (responsive.verySmall ? 0.5 : 0.58)
       : responsive.small && currentSection !== 'hero'
         ? (responsive.verySmall ? 0.28 : 0.4)
         : 1;
@@ -350,13 +354,13 @@ export function createScene(canvas) {
     // softened the face WHILE moving (the "blurry when the cursor moves" report). Keep only a
     // whisper of lean so the body feels alive but the face stays pixel-crisp during motion.
     group.position.set(
-      state.x * responsive.parkX + mouseX * (0.035 + 0.03 * heroLean),
-      state.y + (heroMobile ? responsive.heroY : 0) + float + mouseY * 0.018,
+      state.x * responsive.parkX + mouseX * (0.035 + 0.03 * heroLean) * state.follow,
+      state.y + (heroMobile ? responsive.heroY : 0) + float + mouseY * 0.018 * state.follow,
       0
     );
     group.scale.setScalar(state.scale * responsive.sizeMul);
     group.rotation.y = 0;
-    group.rotation.x = -mouseY * 0.008;
+    group.rotation.x = -mouseY * 0.008 * state.follow;
 
     if (texturesReady) {
       const standDim = dim * (1 - state.sit);
