@@ -1,0 +1,15 @@
+{
+  "name": "Abdullah Sarfaraz",
+  "short_name": "AS",
+  "theme_color": "#050810",
+  "background_color": "#050810",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050810'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='26' font-family='Arial,sans-serif' font-weight='800' fill='%235eead4'%3EAS%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

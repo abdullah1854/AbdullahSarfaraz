@@ -19,11 +19,15 @@
   --maxw: 1320px;
   --chrome-pad: clamp(18px, 3vw, 46px);
   --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* monospace register for labels / numbers / micro-meta (technical-instrument feel) */
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ---- type scale (one source of truth — every text rule maps to a step) ---- */
   --fs-display: clamp(2.35rem, 4.8vw, 4.25rem); /* hero name */
   --fs-h1:      clamp(1.95rem, 3.6vw, 3.35rem); /* gradient display: role-big, contact email */
-  --fs-h2:      clamp(1.75rem, 3.2vw, 2.9rem);  /* every section heading */
+  /* h2 dialed down a step so the h1/h2 ratio opens to ~1.26 at the ceiling (was ~1.16),
+     widening the heading hierarchy. */
+  --fs-h2:      clamp(1.62rem, 3vw, 2.65rem);   /* every section heading */
   --fs-h3:      clamp(1.15rem, 2vw, 1.65rem);   /* item titles: timeline role, work card */
   --fs-lead:    clamp(1.05rem, 1.6vw, 1.25rem); /* section intro / lead copy */
   --fs-body:    clamp(0.92rem, 1.1vw, 1rem);    /* default paragraph text */
@@ -90,6 +94,24 @@ body::before {
     radial-gradient(120% 80% at 50% 120%, rgba(96, 165, 250, 0.08), transparent 70%);
 }
 
+/* Static film layer: a fine SVG turbulence grain (overlay blend, very low alpha) plus
+   a soft corner vignette. pointer-events:none and z-index:0 keep it above the ambient
+   wash but below the #webgl / #tech-orbs-canvas paint and the z-index:2 content, so it
+   never intercepts the canvas pointer interaction. No animation. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background:
+    radial-gradient(130% 120% at 50% 50%, transparent 58%, rgba(2, 4, 10, 0.55) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: auto, 160px 160px;
+}
+
 a, button { font: inherit; color: inherit; }
 a { text-decoration: none; }
 h1, h2, h3, p { margin: 0; }
@@ -141,6 +163,9 @@ html.lenis, html.lenis body { height: auto; }
   will-change: transform;
   backface-visibility: hidden;
 }
+/* the scene owner flags an unavailable WebGL context on <body>; drop the dead canvas
+   so it can't capture a paint layer or sit behind the static fallback. */
+.no-webgl-scene #webgl { display: none; }
 
 .skip-link {
   position: fixed;
@@ -217,12 +242,14 @@ html.lenis, html.lenis body { height: auto; }
   border: 1px solid var(--surface-line);
   box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
 }
-.loader__label { font-weight: 600; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; font-size: var(--fs-eyebrow); color: var(--muted); }
-.loader__percent { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--cyan); min-width: 3.2ch; }
+.loader__label { font-family: var(--font-mono); font-weight: 600; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; font-size: var(--fs-eyebrow); color: var(--muted); }
+.loader__percent { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--cyan); min-width: 3.2ch; }
 .loader__bar { width: 120px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .loader__bar > span {
   display: block; height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  /* solid cyan — the 2-stop cyan→magenta accent is reserved for the timeline sweep;
+     small UI fills read as one confident brand colour. */
+  background: var(--cyan);
   transition: width 200ms ease;
 }
 
@@ -253,6 +280,7 @@ html.lenis, html.lenis body { height: auto; }
   border-radius: 12px;
   border: 1px solid var(--surface-line);
   background: rgba(8, 12, 20, 0.5);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -275,26 +303,33 @@ html.lenis, html.lenis body { height: auto; }
 .nav { display: flex; align-items: center; gap: clamp(14px, 2.2vw, 34px); }
 .nav__link {
   position: relative;
+  font-family: var(--font-mono);
   font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
   color: var(--muted);
   padding: 4px 0;
-  transition: color 200ms ease;
+  transition: color 200ms ease, transform 90ms ease;
 }
 .nav__link::after {
   content: '';
   position: absolute;
   left: 0; bottom: -2px;
   width: 100%; height: 1.5px;
-  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  background: var(--cyan);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav__link:hover, .nav__link.is-active { color: var(--ink); }
 .nav__link:hover::after, .nav__link.is-active::after { transform: scaleX(1); }
+/* "current" = magenta: the active section's nav underline + label switch to the
+   magenta accent, giving magenta a single consistent "you are here" role. */
+.nav__link.is-active { color: var(--magenta); }
+.nav__link.is-active::after { background: var(--magenta); }
+/* sub-120ms tactile press — neutralised by the reduced-motion transition override */
+.nav__link:active { transform: scale(0.94); }
 /* Invisible 44px-tall hit area (WCAG 2.5.5) — enlarges the pointer/keyboard target
    without moving the text or the animated underline. */
 .nav__link::before {
@@ -349,6 +384,7 @@ html.lenis, html.lenis body { height: auto; }
   border-radius: 999px;
   border: 1px solid var(--surface-line);
   background: rgba(8, 12, 20, 0.55);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   font-size: var(--fs-eyebrow);
   font-weight: 700;
@@ -383,7 +419,7 @@ html.lenis, html.lenis body { height: auto; }
   width: 100%;
   height: 0%;
   border-radius: 999px;
-  background: linear-gradient(var(--cyan), var(--magenta));
+  background: var(--cyan);
   box-shadow: 0 0 10px rgba(94, 234, 212, 0.5);
 }
 
@@ -396,6 +432,7 @@ main { position: relative; z-index: 2; }
   position: relative;
   z-index: 2;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   /* nav links scroll to a section's top; without this the heading of a tall
@@ -410,6 +447,7 @@ main { position: relative; z-index: 2; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  font-family: var(--font-mono);
   font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: var(--ls-eyebrow);
@@ -483,6 +521,7 @@ main { position: relative; z-index: 2; }
   align-items: center;
   gap: 1.6rem;
   min-height: 100vh;
+  min-height: 100dvh;
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -493,6 +532,7 @@ main { position: relative; z-index: 2; }
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  font-family: var(--font-mono);
   font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: var(--ls-eyebrow);
@@ -546,6 +586,34 @@ main { position: relative; z-index: 2; }
   letter-spacing: 0;
 }
 
+/* availability/status pill under the subtitle — a small uppercase register with a
+   leading cyan "live" dot. Hidden when JS leaves it empty (no badge content). */
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-4);
+  padding: 6px 14px;
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hero__badge:empty { display: none; }
+.hero__badge::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  flex: 0 0 auto;
+}
+
 /* full-width 4-cell band anchored at the hero bottom — translucent cells so the
    character reads through (no opaque panel); pointer-events:none keeps the canvas
    interactive. Sits above the decorative ticker, below the figure's torso. */
@@ -561,6 +629,7 @@ main { position: relative; z-index: 2; }
   border: 1px solid var(--surface-line);
   border-radius: var(--radius-md);
   overflow: hidden;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   pointer-events: none;
 }
@@ -568,29 +637,42 @@ main { position: relative; z-index: 2; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding: 14px 8px;
+  gap: 6px;
+  padding: 14px 8px 13px;
+  min-height: 104px;
   background: rgba(5, 8, 16, 0.55);
   text-align: center;
 }
 .hero__stat-value {
+  font-family: var(--font-mono);
   font-size: var(--fs-h3);
   font-weight: 800;
   line-height: var(--lh-tight);
   letter-spacing: var(--ls-tight);
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(100deg, var(--cyan) 0%, var(--blue) 60%, var(--magenta) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* solid ink (gradient reserved for role-big + contact email) — keeps the four
+     stat numbers crisp at small size and free of the gradient's mid-tone wash. */
+  color: var(--ink);
 }
 .hero__stat-label {
+  font-family: var(--font-mono);
   font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
   color: var(--muted);
   line-height: 1.2;
+}
+.hero__stat-note {
+  max-width: 18ch;
+  color: rgba(246, 248, 251, 0.58);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+/* No blur support → the translucent cells would let the character bleed through
+   the stat numbers; raise the cell opacity so the figures stay readable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hero__stat { background: rgba(5, 8, 16, 0.9); }
 }
 
 .hero__ticker {
@@ -613,6 +695,41 @@ main { position: relative; z-index: 2; }
 .hero__ticker-track { display: flex; gap: 2.2rem; padding-right: 2.2rem; animation: ticker 26s linear infinite; }
 .hero__ticker-track span::after { content: '·'; margin-left: 2.2rem; color: var(--cyan); }
 @keyframes ticker { to { transform: translateX(-50%); } }
+
+/* =============================================================================
+   Cursor reticle — additive fine-pointer flourish. Created by main.js ONLY when
+   finePointer() && !prefersReducedMotion(); JS owns its transform (eased follow),
+   so it is centred via negative margins, never transform. Never hides the native
+   cursor (pointer-events:none). Not present at all under reduced motion.
+   ============================================================================= */
+.cursor-reticle {
+  position: fixed;
+  top: 0; left: 0;
+  width: 26px; height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 1.5px solid rgba(94, 234, 212, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 150;
+  opacity: 0;            /* hidden until the first real pointer move (see .is-visible) */
+  transition: opacity var(--t-base) ease, border-color var(--t-base) ease,
+              box-shadow var(--t-base) ease, scale var(--t-base) var(--ease-out);
+}
+/* shown only after the cursor has actually moved — no stray ring parked at screen centre on load */
+.cursor-reticle.is-visible { opacity: 0.55; }
+/* over interactive targets — brighter and larger */
+.cursor-reticle.is-active {
+  scale: 1.6;
+  opacity: 0.9;
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+/* inside the tech pit — reads as a grab affordance (dashed, magenta-tinted) */
+.cursor-reticle.is-grab {
+  border-style: dashed;
+  border-color: rgba(255, 79, 216, 0.8);
+  box-shadow: 0 0 16px rgba(255, 79, 216, 0.4);
+}
 
 .scroll-cue {
   position: absolute;
@@ -707,6 +824,7 @@ main { position: relative; z-index: 2; }
 }
 .tl-item__period {
   text-align: right;
+  font-family: var(--font-mono);
   font-size: var(--fs-small);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -761,11 +879,44 @@ main { position: relative; z-index: 2; }
 .tl-role__org::before { content: '· '; color: rgba(246, 248, 251, 0.4); }
 .tl-role__meta {
   color: var(--cyan);
+  font-family: var(--font-mono);
   font-size: var(--fs-small);
   font-weight: 600;
   letter-spacing: 0.03em;
-  margin: 3px 0 9px;
+  margin: 3px 0 7px;
   font-variant-numeric: tabular-nums;
+}
+.tl-role__duration {
+  display: grid;
+  grid-template-columns: minmax(104px, 220px) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  max-width: 340px;
+}
+.tl-role__bar {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.tl-role__bar i {
+  display: block;
+  width: var(--role-duration, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  box-shadow: 0 0 14px rgba(94, 234, 212, 0.42);
+}
+.tl-role__duration b {
+  color: rgba(246, 248, 251, 0.68);
+  font-family: var(--font-mono);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 .tl-role__points { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
 .tl-role__points li {
@@ -791,10 +942,11 @@ main { position: relative; z-index: 2; }
    ============================================================================= */
 .work__grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 0.58fr) minmax(0, 1fr);
   gap: clamp(1.6rem, 5vw, 4.4rem);
   align-items: center;
 }
+.work__intro { grid-column: 1; grid-row: 1; }
 .work__intro p { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-body); margin: 1.15rem 0 1.55rem; max-width: 44ch; }
 .text-link {
   position: relative;
@@ -812,7 +964,13 @@ main { position: relative; z-index: 2; }
 .text-link::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .text-link:hover { gap: 14px; border-color: var(--cyan); text-shadow: 0 0 12px rgba(94,234,212,0.25); }
 
-.work-carousel { position: relative; min-width: 0; overflow: clip; }
+.work-carousel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: relative;
+  min-width: 0;
+  overflow: clip;
+}
 .work-carousel__viewport {
   position: relative;
   overflow: hidden;
@@ -831,6 +989,7 @@ main { position: relative; z-index: 2; }
   background:
     linear-gradient(180deg, rgba(94, 234, 212, 0.045), transparent 38%),
     rgba(8, 11, 18, 0.78);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   box-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(94,234,212,0.06) inset;
   min-height: 280px;
@@ -838,8 +997,8 @@ main { position: relative; z-index: 2; }
   flex-direction: column;
 }
 .work-card__top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
-.work-card__num { font-weight: 800; font-size: var(--fs-h1); color: rgba(255, 255, 255, 0.08); letter-spacing: var(--ls-tight); }
-.work-card__type { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--magenta); font-weight: 600; }
+.work-card__num { font-family: var(--font-mono); font-weight: 800; font-size: var(--fs-h1); color: rgba(255, 255, 255, 0.08); letter-spacing: var(--ls-tight); }
+.work-card__type { font-family: var(--font-mono); font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--magenta); font-weight: 600; }
 .work-card__title { font-weight: 700; font-size: var(--fs-h3); line-height: var(--lh-heading); letter-spacing: var(--ls-heading); margin: 0.2rem 0 0.8rem; }
 .work-card__desc { color: var(--muted); font-size: var(--fs-body); line-height: var(--lh-body); max-width: 52ch; }
 .work-card__points { display: flex; flex-direction: column; gap: 9px; margin: 1.1rem 0 1.2rem; padding: 0; list-style: none; }
@@ -891,6 +1050,7 @@ main { position: relative; z-index: 2; }
   place-items: center;
   cursor: pointer;
 }
+.work-dot { transition: transform 90ms ease; }
 .work-dot::before {
   content: '';
   width: 8px; height: 8px;
@@ -898,7 +1058,66 @@ main { position: relative; z-index: 2; }
   background: rgba(255, 255, 255, 0.18);
   transition: background 200ms ease, width 200ms ease, box-shadow 200ms ease;
 }
-.work-dot.is-active::before { width: 22px; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow: 0 0 0 3px rgba(94,234,212,0.15); }
+.work-dot.is-active::before { width: 22px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 0 3px rgba(94,234,212,0.15); }
+/* sub-120ms tactile press — neutralised by the reduced-motion transition override */
+.work-dot:active { transform: scale(0.94); }
+
+.project-index {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: clamp(0.2rem, 1.5vw, 1rem);
+}
+.project-index__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 76px;
+  padding: 11px 10px;
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-sm);
+  background: rgba(8, 12, 20, 0.48);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-base) ease, background var(--t-base) ease, transform var(--t-base) ease, box-shadow var(--t-base) ease;
+}
+.project-index__item:hover,
+.project-index__item.is-active {
+  border-color: rgba(94, 234, 212, 0.58);
+  background: rgba(94, 234, 212, 0.08);
+  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.14) inset;
+}
+.project-index__item:active { transform: translateY(1px); }
+.project-index__num {
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: var(--fs-eyebrow);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+}
+.project-index__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.project-index__title {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+.project-index__meta {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.28;
+}
 
 /* =============================================================================
    Tech — pearl pit
@@ -919,6 +1138,33 @@ main { position: relative; z-index: 2; }
   width: 100%;
   min-height: clamp(300px, 44vh, 420px);
 }
+.techpit__zones {
+  position: absolute;
+  inset: 40px 0 auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0.42;
+}
+.techpit__zones span {
+  min-height: 46px;
+  border-left: 1px solid var(--zone-accent, var(--cyan));
+  padding: 7px 8px;
+  color: var(--zone-accent, var(--cyan));
+  font-family: var(--font-mono);
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: var(--ls-eyebrow);
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+@supports (color: color-mix(in srgb, #fff 50%, transparent)) {
+  .techpit__zones span {
+    border-left-color: color-mix(in srgb, var(--zone-accent) 70%, transparent);
+    color: color-mix(in srgb, var(--zone-accent) 78%, var(--ink));
+  }
+}
 .techpit__hint {
   display: inline-flex;
   font-size: var(--fs-eyebrow);
@@ -938,15 +1184,74 @@ main { position: relative; z-index: 2; }
   border-radius: var(--radius-full);
   border: 1px solid var(--surface-line);
   background: var(--surface);
+  font-family: var(--font-mono);
   font-size: var(--fs-small);
 }
 .tech__chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.tech__chip--category b {
+  min-width: 22px;
+  margin-left: 2px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  font-size: var(--fs-eyebrow);
+  line-height: 1;
+  text-align: center;
+}
+.tech__fallback-group {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-sm);
+  background: rgba(8, 12, 20, 0.5);
+}
+.tech__fallback-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.tech__fallback-label i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.tech__fallback-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* =============================================================================
    Contact — sparse columns, no cards
    ============================================================================= */
 .contact .section-inner { display: flex; flex-direction: column; }
 .contact__lead { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-body); max-width: 36ch; margin: var(--space-4) 0 var(--space-6); }
+/* primary call-to-action — the one filled button on the page; sits as the first
+   child of the contact grid, above the gradient email. */
+.contact-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 12px 26px;
+  border-radius: var(--radius-full);
+  background: var(--cyan);
+  color: #03110f;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 30px rgba(94, 234, 212, 0.18);
+  transition: transform var(--t-base) ease, box-shadow var(--t-base) ease, background var(--t-base) ease;
+}
+.contact-cta:hover {
+  transform: translateY(-2px);
+  background: #7af0dc;
+  box-shadow: 0 16px 44px rgba(94, 234, 212, 0.32), var(--glow-cyan);
+}
 .contact__grid {
   display: flex;
   flex-direction: column;
@@ -967,6 +1272,7 @@ main { position: relative; z-index: 2; }
   color: var(--cyan);
   margin-bottom: 1rem;
 }
+.contact-col__note { color: var(--muted); font-size: var(--fs-small); line-height: var(--lh-body); margin-bottom: 0.7rem; opacity: 0.85; }
 .contact-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .contact-col a, .contact-col span { color: var(--muted); font-size: var(--fs-body); line-height: var(--lh-body); transition: color var(--t-base) ease; }
 .contact-col a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
@@ -1002,6 +1308,7 @@ main { position: relative; z-index: 2; }
   flex-wrap: wrap;
   gap: 1rem;
   padding-top: var(--space-6);
+  font-family: var(--font-mono);
   color: var(--muted);
   font-size: var(--fs-small);
   letter-spacing: 0.01em;
@@ -1021,13 +1328,25 @@ main { position: relative; z-index: 2; }
 
 @media (max-width: 1024px) {
   .social-rail { display: none; }
+  .resume-link { display: none; }
   /* minmax(0,1fr) — not bare 1fr — so the 5-slide carousel's min-content can't
      blow the single column wider than the viewport (horizontal overflow). */
   .about__grid, .work__grid { grid-template-columns: minmax(0, 1fr); }
   .work__grid { gap: 2.2rem; }
+  .work__intro,
+  .work-carousel,
+  .project-index {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .project-index { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 0; }
 }
 
-@media (max-width: 900px) {
+/* Raised from 900px → 1024px: the stacked/static hero+stats layout (and its
+   collision fix) now also covers the 901–1024 band, where the two-column grid +
+   absolute stat band still overlapped the figure. The >1024 desktop hero is
+   untouched (base grid + the min-width:1025px padding rule). */
+@media (max-width: 1024px) {
   /* Collapse to a single top-aligned flex column. Flex (not grid) avoids the
      auto-row stretching that previously left a dead gap between the name block
      and the role; one gap value gives a consistent rhythm, and the dimmed figure
@@ -1041,7 +1360,9 @@ main { position: relative; z-index: 2; }
     text-align: left;
     min-height: 100svh;
     padding-top: clamp(104px, 16vh, 150px);
-    padding-bottom: clamp(44px, 9vh, 92px);
+    /* env() safe-area added so the static stat band clears the iPad/landscape home
+       indicator at this width too (previously only the <=480 hero had it). */
+    padding-bottom: calc(clamp(44px, 9vh, 92px) + env(safe-area-inset-bottom, 0px));
   }
   .hero__left, .hero__right { justify-self: start; max-width: 100%; }
   .hero__right { text-align: left; margin-top: 0; }
@@ -1059,9 +1380,16 @@ main { position: relative; z-index: 2; }
 
 @media (max-width: 760px) {
   #webgl { opacity: 0.88; }
+  .section:not(.hero) {
+    align-items: flex-start;
+    min-height: auto;
+    padding-top: clamp(80px, 12vh, 104px);
+    padding-bottom: 64px;
+  }
   .header {
     background: linear-gradient(180deg, rgba(5, 8, 16, 0.94), rgba(5, 8, 16, 0.72) 72%, transparent);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
   }
   .site-link { display: none; }
@@ -1077,12 +1405,103 @@ main { position: relative; z-index: 2; }
   .work-carousel__controls {
     justify-content: center;
     gap: 10px;
+    margin-top: 0.9rem;
   }
   .work-carousel__dots {
     flex: 1 1 auto;
     justify-content: center;
   }
-  .techpit { min-height: clamp(280px, 42vh, 360px); }
+  .work__grid { gap: 1.1rem; }
+  .work-card {
+    min-height: 0;
+    padding: clamp(0.95rem, 4vw, 1.2rem);
+    border-radius: 14px;
+  }
+  .work-card__top { align-items: flex-start; gap: 0.7rem; }
+  .work-card__num { display: none; }
+  .work-card__type { font-size: 0.62rem; letter-spacing: 0.12em; }
+  .work-card__title {
+    font-size: clamp(1.08rem, 5vw, 1.35rem);
+    line-height: 1.08;
+    margin: 0.15rem 0 0.7rem;
+  }
+  .work-card__desc {
+    max-width: none;
+    font-size: 0.92rem;
+    line-height: 1.48;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .work-card__points {
+    gap: 6px;
+    margin: 0.85rem 0 0.95rem;
+  }
+  .work-card__points li {
+    padding-left: 18px;
+    font-size: 0.9rem;
+    line-height: 1.38;
+  }
+  .work-card__points li::before {
+    top: 0.48em;
+    width: 10px;
+    height: 6px;
+  }
+  .work-card__stack {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+  .project-index {
+    display: flex;
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin-top: 0;
+    padding: 2px 2px 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .project-index::-webkit-scrollbar { display: none; }
+  .project-index__item {
+    flex: 0 0 clamp(188px, 68vw, 260px);
+    min-height: 58px;
+    padding: 10px 12px;
+    scroll-snap-align: start;
+  }
+  .project-index__title,
+  .project-index__meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+  }
+  .project-index__meta { font-size: 0.68rem; }
+  .tech__sub {
+    margin: 0.8rem 0 1rem;
+    max-width: 30ch;
+  }
+  .techpit { min-height: 0; }
+  .techpit__zones { display: none; }
+  .tech__legend.is-fallback {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 0.2rem;
+  }
+  .tech__legend.is-fallback .tech__chip {
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 0.74rem;
+    line-height: 1.15;
+  }
+  .tech__fallback-group {
+    gap: 10px;
+    padding: 12px;
+  }
+  .tech__fallback-label { font-size: 0.74rem; }
   .resume-link { display: none; }
   .scroll-cue { display: none; }
   .tl-item { grid-template-columns: 1fr; gap: 0.5rem; }
@@ -1090,6 +1509,17 @@ main { position: relative; z-index: 2; }
   .timeline__line { display: none; }
   .tl-item__body { padding-left: 18px; }
   .tl-item__body::before { left: -2px; }
+}
+
+/* No blur support → the mobile sticky header's gradient is semi-transparent and the
+   character/content would show through behind the brand + nav; raise its opacity so
+   the chrome stays legible while scrolling. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (max-width: 760px) {
+    .header {
+      background: linear-gradient(180deg, rgba(5, 8, 16, 0.99), rgba(5, 8, 16, 0.93) 72%, rgba(5, 8, 16, 0.6));
+    }
+  }
 }
 
 /* aggressive mobile polish for 390px and below: ref-style ruthless reduction of presence,
@@ -1104,7 +1534,9 @@ main { position: relative; z-index: 2; }
        old 7.5vw ran them edge-to-edge (the email overflowed) on phones, so this
        step is tuned so the longest line (22-char email) keeps a side margin. */
     --fs-h1:      clamp(1.4rem, 6.3vw, 2rem);
-    --fs-h2:      clamp(1.35rem, 7vw, 1.9rem);
+    /* h2 lowered so the h1/h2 ratio matches the desktop ceiling (~1.25) instead of
+       collapsing to ~1.05 on phones — keeps the heading hierarchy legible. */
+    --fs-h2:      clamp(1.2rem, 5.6vw, 1.6rem);
     --fs-h3:      clamp(1rem, 4vw, 1.25rem);
     --fs-lead:    clamp(0.95rem, 2.8vw, 1.05rem);
     --fs-body:    0.9rem;
@@ -1114,6 +1546,12 @@ main { position: relative; z-index: 2; }
   /* the mobile header wraps to two rows (brand + nav), so it is taller — give
      anchored section landings extra clearance to match. */
   .section { padding: clamp(52px, 9vh, 96px) var(--chrome-pad); scroll-margin-top: 112px; }
+  .section:not(.hero) {
+    align-items: flex-start;
+    min-height: auto;
+    padding-top: calc(84px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
   .header {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1140,13 +1578,19 @@ main { position: relative; z-index: 2; }
   .hero__right { margin-bottom: clamp(132px, 24vh, 178px); }
   .no-webgl-scene .hero__right { margin-bottom: 0; }
   .hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hero__stat { padding: 13px 6px; }
+  .hero__stat { min-height: 98px; padding: 13px 6px; }
   .hero__stat-label { letter-spacing: 0.12em; }
+  .hero__stat-note { font-size: 0.68rem; }
   .about__copy h2 { max-width: 18ch; margin: 0.7rem 0 1rem; }
   .about__copy p { max-width: 100%; }
   .about__facts { gap: 8px; margin-top: 1.3rem; }
   .about__facts span { padding: 6px 12px; }
-  .work-card { min-height: 220px; padding: 1.1rem; }
+  .work-card { padding: 1rem; }
+  .project-index__item {
+    flex-basis: clamp(170px, 72vw, 238px);
+    min-height: 54px;
+  }
+  .project-index__title { font-size: 0.78rem; }
   .contact__lead { max-width: 100%; }
   .contact-cols { gap: 1.2rem; }
   .contact-col h3 { margin-bottom: 0.7rem; }

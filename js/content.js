@@ -33,10 +33,10 @@ export const CONTENT = {
       'Manager, IT System at Goldbell Group — driving ERP transformation and AI adoption with 8+ years of Microsoft Dynamics 365 F&O expertise.',
     badge: 'Based in Singapore · Open to consulting',
     stats: [
-      { value: '8+', label: 'Years Experience' },
-      { value: '20+', label: 'ERP Projects' },
-      { value: '50%', label: 'Efficiency Gains' },
-      { value: '15+', label: 'Certifications' },
+      { value: '8+', label: 'Years Experience', note: 'D365 + AI delivery' },
+      { value: '20+', label: 'ERP Projects', note: 'Implementations & upgrades' },
+      { value: '50%', label: 'Efficiency Gains', note: 'Automation-led outcomes' },
+      { value: '15+', label: 'Certifications', note: 'Microsoft ecosystem' },
     ],
     marquee: ['D365 F&O', 'Microsoft Copilot', 'Power Platform', 'Azure', 'AI Adoption', 'ERP Strategy'],
   },
@@ -64,10 +64,11 @@ export const CONTENT = {
           title: 'Manager, IT System',
           period: 'Jul 2025 — Present',
           duration: '11 mos',
+          durationMonths: 11,
           current: true,
           points: [
             'Spearheaded ERP and AI initiatives, aligning D365 F&O customization with business strategy.',
-            'Led cross-functional teams to implement Microsoft Copilot, boosting operational efficiency by 50%.',
+            'Led cross-functional teams to roll out Microsoft Copilot across operations, lifting day-to-day efficiency.',
             'Drove adoption of intelligent automation tools, reducing process times and improving data accuracy.',
           ],
         },
@@ -75,6 +76,7 @@ export const CONTENT = {
           title: 'Assistant Manager, IT System',
           period: 'Oct 2022 — Jul 2025',
           duration: '2 yrs 10 mos',
+          durationMonths: 34,
           points: [
             'Managed D365 F&O customizations and system integrations.',
             'Led AI adoption strategies and digital transformation initiatives.',
@@ -92,6 +94,7 @@ export const CONTENT = {
           title: 'Application Development Senior Analyst',
           period: 'Sep 2021 — Oct 2022',
           duration: '1 yr 2 mos',
+          durationMonths: 14,
           points: [
             'Integration Lead on D365 F&O programs, designing integrations with Web Services, Logic Apps, Data Entities, and OData.',
             'Recognized with the "Sparkling Star" and "ACE" awards.',
@@ -110,6 +113,7 @@ export const CONTENT = {
           location: 'Gurugram, India',
           period: 'May 2021 — Sep 2021',
           duration: '5 mos',
+          durationMonths: 5,
           points: [
             'Led the AX 2012 → Dynamics 365 F&O upgrade.',
             'Provided optimization support for existing D365 F&O implementations.',
@@ -121,9 +125,10 @@ export const CONTENT = {
           location: 'Noida, India',
           period: 'Dec 2019 — May 2021',
           duration: '1 yr 6 mos',
+          durationMonths: 18,
           points: [
-            'Delivered D365 F&O implementation projects.',
-            'Provided technical consulting for enterprise clients.',
+            'Built and configured D365 F&O modules through full implementation cycles, from design to go-live.',
+            'Advised enterprise clients on solution design and resolved post-go-live technical issues.',
           ],
         },
       ],
@@ -139,9 +144,10 @@ export const CONTENT = {
           location: 'Gurugram, India',
           period: 'Sep 2019 — Nov 2019',
           duration: '3 mos',
+          durationMonths: 3,
           points: [
-            'Provided D365 technical consulting services.',
-            'Supported client implementations and customizations.',
+            'Delivered D365 technical consulting on client engagements, translating requirements into working configurations.',
+            'Supported implementations with X++ customizations and data-migration fixes.',
           ],
         },
         {
@@ -150,9 +156,10 @@ export const CONTENT = {
           location: 'Bangalore, India',
           period: 'Sep 2018 — Jul 2019',
           duration: '10 mos',
+          durationMonths: 10,
           points: [
-            'Developed software solutions for enterprise clients.',
-            'Worked on Dynamics 365 and ERP projects.',
+            'Developed and tested ERP features for enterprise clients across the delivery lifecycle.',
+            'Contributed to Dynamics 365 build and customization work within project teams.',
           ],
         },
       ],
@@ -161,13 +168,14 @@ export const CONTENT = {
 
   projectsHeading: 'Selected work',
   projectsIntro:
-    'Infrastructure, automation, and AI accelerators — built for real Microsoft Dynamics operations.',
+    'Enterprise Dynamics accelerators alongside personal builds — infrastructure, automation, and AI, shipped end to end.',
   projectsAllUrl: 'https://github.com/abdullah1854',
   projects: [
     {
       title: 'MCP Gateway',
       type: 'AI Infrastructure',
       number: '01',
+      impact: 'Secure AI-agent operations',
       description:
         'A universal Model Context Protocol gateway that aggregates many MCP servers behind a single secure endpoint, with orchestration, observability, and developer-friendly management for AI agents.',
       stack: 'TypeScript · MCP · Docker · Prometheus',
@@ -177,6 +185,7 @@ export const CONTENT = {
       title: 'SimpleQuran',
       type: 'Web & iOS',
       number: '02',
+      impact: 'Accessible Quran reading',
       description:
         'A clean, accessible Quran reading platform — web and native iOS — for browsing surahs, following translations, and listening to recitation, backed by Supabase.',
       stack: 'Next.js · TypeScript · Supabase · Swift / iOS',
@@ -186,6 +195,7 @@ export const CONTENT = {
       title: 'KitchenGarden',
       type: 'Web App',
       number: '03',
+      impact: 'Personalized care schedule',
       description:
         'A dynamic plant-care scheduler based on the Kitchen Garden Fertilizer guide — generates a personalized 6-to-12-month care calendar and auto-resolves conflicts between incompatible treatments.',
       stack: 'JavaScript · HTML · CSS · PWA',
@@ -195,46 +205,58 @@ export const CONTENT = {
       title: 'D365 F&O Intelligent Automation Framework',
       type: 'Enterprise ERP',
       number: '04',
+      impact: 'Lower manual processing',
       description:
-        'A custom automation framework for Microsoft Dynamics 365 F&O built on Power Platform and Azure services — cutting process times by 60%.',
+        'A custom automation framework for Microsoft Dynamics 365 F&O built on Power Platform and Azure services — cutting manual processing time on repetitive, high-volume workflows.',
       stack: 'D365 F&O · Power Platform · Azure · Logic Apps',
-      points: ['60% faster processing', 'Power Platform + Azure automation', 'Reusable across modules'],
+      points: ['Cuts manual processing time on repetitive workflows', 'Power Platform + Azure automation', 'Reusable across modules'],
     },
     {
       title: 'Microsoft Copilot Integration Accelerator',
       type: 'AI & Automation',
       number: '05',
+      impact: 'Faster Copilot rollout',
       description:
-        'A pre-built integration package for rolling out Microsoft Copilot across D365 environments — achieving a 50% operational-efficiency boost.',
+        'A pre-built integration package for rolling out Microsoft Copilot across D365 environments — a measurable lift in operational efficiency from day one.',
       stack: 'Copilot Studio · D365 · AI Services · Power Automate',
-      points: ['50% efficiency gain', 'Drop-in Copilot for D365', 'Power Automate flows'],
+      points: ['Faster operational throughput', 'Drop-in Copilot for D365', 'Power Automate flows'],
     },
     {
       title: 'ERP Migration Toolkit (AX 2012 → D365)',
       type: 'Migration',
       number: '06',
+      impact: 'Repeatable AX-to-D365 migration',
       description:
-        'A migration framework for upgrading AX 2012 to D365 F&O — data-migration scripts, customization templates, and testing automation that cut migration time by 40%.',
+        'A migration framework for upgrading AX 2012 to D365 F&O — data-migration scripts, customization templates, and testing automation that shorten upgrade cycles with repeatable, low-risk tooling.',
       stack: 'AX 2012 · D365 F&O · Azure DevOps · X++',
-      points: ['40% faster migration', 'Data + customization templates', 'Testing automation'],
+      points: ['Shortens upgrade cycles with repeatable tooling', 'Data + customization templates', 'Testing automation'],
     },
   ],
 
   techHeading: 'My techstack',
-  techSubheading: 'Move your cursor anywhere on screen — grab, throw, and inspect the stack I use to ship enterprise Dynamics and AI work.',
+  // Positioning line only. The device/interaction instruction lives in `techHint`,
+  // which techstack.js surfaces device-adaptively (cursor vs touch wording).
+  techSubheading: 'The stack I use to ship enterprise Dynamics and AI work.',
+  techHint: { fine: 'Move your cursor anywhere — grab, throw & inspect.', touch: 'Tap, drag & fling the stack.' },
+  techCategories: [
+    { id: 'erp', label: 'ERP core', accent: '#7c3aed' },
+    { id: 'ai', label: 'AI automation', accent: '#ff4fd8' },
+    { id: 'cloud', label: 'Cloud delivery', accent: '#38bdf8' },
+    { id: 'data', label: 'Data & BI', accent: '#34d399' },
+  ],
   techstack: [
-    { label: 'D365 F&O', accent: '#7c3aed' },
-    { label: 'X++', accent: '#60a5fa' },
-    { label: 'Copilot Studio', accent: '#22d3ee' },
-    { label: 'Power Platform', accent: '#f59e0b' },
-    { label: 'Power Automate', accent: '#5eead4' },
-    { label: 'Azure', accent: '#38bdf8' },
-    { label: 'Azure DevOps', accent: '#2496ed' },
-    { label: 'SQL Server', accent: '#ef4444' },
-    { label: 'Power BI', accent: '#f2c811' },
-    { label: 'ETL · SSIS', accent: '#a78bfa' },
-    { label: 'Data Warehousing', accent: '#34d399' },
-    { label: 'AI Adoption', accent: '#ff4fd8' },
+    { label: 'D365 F&O', accent: '#7c3aed', category: 'erp' },
+    { label: 'X++', accent: '#60a5fa', category: 'erp' },
+    { label: 'Copilot Studio', accent: '#22d3ee', category: 'ai' },
+    { label: 'Power Platform', accent: '#f59e0b', category: 'ai' },
+    { label: 'Power Automate', accent: '#5eead4', category: 'ai' },
+    { label: 'Azure', accent: '#38bdf8', category: 'cloud' },
+    { label: 'Azure DevOps', accent: '#2496ed', category: 'cloud' },
+    { label: 'SQL Server', accent: '#ef4444', category: 'data' },
+    { label: 'Power BI', accent: '#f2c811', category: 'data' },
+    { label: 'ETL · SSIS', accent: '#a78bfa', category: 'data' },
+    { label: 'Data Warehousing', accent: '#34d399', category: 'data' },
+    { label: 'AI Adoption', accent: '#ff4fd8', category: 'ai' },
   ],
 
   contact: {
@@ -244,7 +266,11 @@ export const CONTENT = {
     email: 'abdullah0094@gmail.com',
     location: 'Singapore',
     current: 'Manager, IT System · Goldbell Group',
-    status: 'Open to consulting · replies within 24h',
+    status: 'Open to consulting · usually replies within a day',
+    ctaLabel: 'Book a conversation',
+    ctaSubject: 'Consulting enquiry via abdullahsarfaraz.cloud',
+    // 15+ certifications held in total (see hero stat); the list below is a curated subset.
+    certificationsNote: 'A selection from 15+ certifications',
     certifications: [
       'Microsoft Certified Trainer — since 2020',
       'MCSA: SQL 2016 BI Development',

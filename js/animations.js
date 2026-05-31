@@ -1,3 +1,5 @@
+import { prefersReducedMotion, finePointer } from './env.js?v=20260531-ui-audit';
+
 export async function initAnimations(scene) {
   // Reveals: hero + work-carousel are owned by dedicated tweens; the generic
   // [data-reveal] loop skips them to avoid double-animating the same node.
@@ -14,7 +16,7 @@ export async function initAnimations(scene) {
   }
 
   gsap.registerPlugin(ScrollTrigger);
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prefersReduced = prefersReducedMotion();
 
   // ---- Lenis: inertia smooth-scroll, driven off the GSAP ticker so it stays in
   // perfect lockstep with ScrollTrigger (scene parking, reveals, progress bar).
@@ -94,8 +96,9 @@ export async function initAnimations(scene) {
   }
 
   const heroLines = gsap.utils.toArray('.hero__name-line > span');
+  const heroRevealItems = ['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.hero__badge', '.hero__stats'];
   gsap.set(heroLines, { yPercent: 110 });
-  gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.hero__stats'], { opacity: 0, y: 22 });
+  gsap.set(heroRevealItems, { opacity: 0, y: 22 });
 
   gsap.timeline({ delay: 0.18 })
     .to('.hero__eyebrow', { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out' })
@@ -103,24 +106,48 @@ export async function initAnimations(scene) {
     .to('.hero__role-top', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.55')
     .to('.hero__role-big', { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out' }, '-=0.45')
     .to('.hero__subtitle', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.5')
+    .to('.hero__badge', { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }, '-=0.42')
     .to('.hero__stats', { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.45');
 
   // Safety net: setTimeout fires even when rAF (the GSAP ticker) is throttled in a
   // backgrounded/inactive tab, so the hero copy can never get stuck hidden.
   setTimeout(() => {
     gsap.set(heroLines, { yPercent: 0 });
-    gsap.set(['.hero__eyebrow', '.hero__role-top', '.hero__role-big', '.hero__subtitle', '.hero__stats'], { opacity: 1, y: 0 });
+    gsap.set(heroRevealItems, { opacity: 1, y: 0 });
   }, 2400);
+
+  // Reveal differentiation: headings/titles lead with bigger travel + a longer
+  // settle; body/supporting copy uses a shorter, snappier move. When a block holds
+  // several reveal children they cascade via a small per-sibling delay instead of
+  // firing as one flat wave. Hero + work-carousel keep their dedicated tweens.
+  const isHeading = (element) =>
+    /^H[1-6]$/.test(element.tagName)
+    || element.classList.contains('section-title')
+    || element.classList.contains('section-kicker');
+
+  // Count reveal-eligible siblings per parent so each child can stagger by index.
+  const siblingIndex = new WeakMap();
+  document.querySelectorAll('[data-reveal]').forEach((element) => {
+    if (element.closest('.hero') || element.classList.contains('work-carousel')) return;
+    const peers = Array.from(element.parentElement?.children || [])
+      .filter((node) => node.hasAttribute('data-reveal')
+        && !node.classList.contains('work-carousel')
+        && !node.closest('.hero'));
+    siblingIndex.set(element, peers.length > 1 ? peers.indexOf(element) : 0);
+  });
 
   gsap.utils.toArray('[data-reveal]').forEach((element) => {
     if (element.closest('.hero') || element.classList.contains('work-carousel')) return;
+    const heading = isHeading(element);
+    const stagger = (siblingIndex.get(element) || 0) * 0.08;
     gsap.fromTo(
       element,
-      { opacity: 0, y: 28 },
+      { opacity: 0, y: heading ? 40 : 22 },
       {
         opacity: 1,
         y: 0,
-        duration: 0.72,
+        duration: heading ? 0.82 : 0.6,
+        delay: stagger,
         ease: 'power3.out',
         onStart() { element.classList.add('is-revealing'); },
         onComplete() { element.classList.remove('is-revealing'); element.style.willChange = 'auto'; },
@@ -176,14 +203,16 @@ export async function initAnimations(scene) {
 
   const heroLeft = document.querySelector('.hero__left');
   const heroRight = document.querySelector('.hero__right');
-  if (heroLeft && heroRight && window.matchMedia('(pointer: fine)').matches) {
+  if (heroLeft && heroRight && finePointer()) {
     let px = 0, py = 0, parallaxQueued = false;
     const applyParallax = () => {
       parallaxQueued = false;
       const hero = document.getElementById('hero');
       if (hero) { const r = hero.getBoundingClientRect(); if (r.bottom < 0 || r.top > window.innerHeight) return; }
-      gsap.to(heroLeft, { x: px * 7, y: py * 4, duration: 0.55, ease: 'power2.out', overwrite: true });
-      gsap.to(heroRight, { x: px * -6, y: py * -3, duration: 0.55, ease: 'power2.out', overwrite: true });
+      // Foreground leads (±20/±13px); the background panel counter-shifts (±12/±8px)
+      // so the opposing drift reads as real depth instead of the old ~invisible ±7/±4.
+      gsap.to(heroLeft, { x: px * 20, y: py * 13, duration: 0.55, ease: 'power2.out', overwrite: true });
+      gsap.to(heroRight, { x: px * -12, y: py * -8, duration: 0.55, ease: 'power2.out', overwrite: true });
     };
     window.addEventListener('pointermove', (event) => {
       px = (event.clientX / window.innerWidth - 0.5) * 2;
@@ -197,7 +226,7 @@ export async function initAnimations(scene) {
 
 function forceReveal() {
   document
-    .querySelectorAll('[data-reveal], .tl-item, .work-carousel, .hero__eyebrow, .hero__role-top, .hero__role-big, .hero__name-line > span')
+    .querySelectorAll('[data-reveal], .tl-item, .work-carousel, .hero__eyebrow, .hero__role-top, .hero__role-big, .hero__badge, .hero__name-line > span')
     .forEach((element) => {
       element.style.opacity = '1';
       element.style.transform = 'none';

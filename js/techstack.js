@@ -19,7 +19,8 @@
 //    • no canvas / no 2d ctx   → static chip list.
 // =============================================================================
 
-import { CONTENT } from './content.js';
+import { CONTENT } from './content.js?v=20260531-ui-audit';
+import { prefersReducedMotion, finePointer, BP } from './env.js?v=20260531-ui-audit';
 
 let activeTechPitCleanup = null;
 
@@ -151,6 +152,21 @@ function monogram(label) {
     .slice(0, 3);
 }
 
+// Device-adapt the discoverability hint inside #techpit. Prefers CONTENT.techHint when
+// content.js supplies it (string → shared copy, or { touch, fine } → per-device), and
+// degrades to sensible defaults when it is absent. finePointer() re-reads live.
+function hintCopyFor(isFine) {
+  const h = CONTENT.techHint;
+  if (h && typeof h === 'object') return (isFine ? h.fine : h.touch) || h.fine || h.touch || '';
+  if (typeof h === 'string' && h) return h;
+  return isFine ? 'move cursor anywhere · grab & throw' : 'tap, drag & fling';
+}
+function applyHintCopy(techPit) {
+  const hint = (techPit || document).querySelector('.techpit__hint');
+  if (!hint) return;
+  hint.textContent = hintCopyFor(finePointer());
+}
+
 export async function initTechPit() {
   if (activeTechPitCleanup) {
     activeTechPitCleanup();
@@ -162,13 +178,38 @@ export async function initTechPit() {
   const canvas = document.getElementById('tech-orbs-canvas');
   const legend = document.getElementById('tech-legend');
   const techs = CONTENT.techstack || [];
+  const categories = CONTENT.techCategories || [];
+  const categoryById = new Map(categories.map((cat) => [cat.id, cat]));
+  const categoryGroups = categories
+    .map((cat) => ({
+      ...cat,
+      indexes: techs
+        .map((tech, index) => ({ tech, index }))
+        .filter(({ tech }) => tech.category === cat.id)
+        .map(({ index }) => index),
+    }))
+    .filter((group) => group.indexes.length);
+  const groupLookup = new Map();
+  categoryGroups.forEach((group, groupIndex) => {
+    group.indexes.forEach((techIndex, itemIndex) => {
+      groupLookup.set(techIndex, { group, groupIndex, itemIndex, count: group.indexes.length });
+    });
+  });
+  const categoryFor = (tech) => categoryById.get(tech.category) || null;
 
   if (!canvas || !anchor || !techs.length) { showFallback(legend, techs, techPit); return; }
+
+  // Phones and touch-first devices read the stack better as a categorized map than
+  // as full-screen physics marbles. Keep the rich cursor-driven pit for desktop.
+  if (window.innerWidth <= BP.sm || !finePointer()) {
+    showFallback(legend, techs, techPit);
+    return;
+  }
 
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('role', 'presentation');
 
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (prefersReducedMotion()) {
     showFallback(legend, techs, techPit);
     return;
   }
@@ -190,7 +231,11 @@ export async function initTechPit() {
   const ctx = canvas.getContext('2d');
   if (!ctx) { showFallback(legend, techs, techPit); return; }
 
-  const finePointer = window.matchMedia('(pointer: fine)').matches;
+  // Interactive path is live: swap the static HTML hint for device-adapted copy.
+  applyHintCopy(techPit);
+
+  // Pointer type is read live via finePointer() (env.js) so a device that switches
+  // pointer mode reflects without reload — replaces the old import-time matchMedia capture.
   // Cap DPR — full-viewport blits at 2.5× were the main scroll-jank source on first tech visit.
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const FONT = (px) => `700 ${px}px "Geist", system-ui, -apple-system, sans-serif`;
@@ -208,12 +253,16 @@ export async function initTechPit() {
   engine.velocityIterations = 6;  // default 4
   const world = engine.world;
 
-  const sizeScale = () => Math.min(1, Math.max(0.52, Math.min(W, H) / 900));
+  // Narrow viewports need smaller marbles so the semantic groups remain readable as a
+  // cluster, but not so small that baked canvas wordmarks blur.
+  const sizeScaleFloor = () => (W <= BP.xs ? 0.68 : W <= BP.sm ? 0.72 : 0.52);
+  const radiusFloor = () => (W <= BP.xs ? 44 : W <= BP.sm ? 46 : 42);
+  const sizeScale = () => Math.min(1, Math.max(sizeScaleFloor(), Math.min(W, H) / 900));
   function radiusFor(label) {
     ctx.font = FONT(16);
     const tw = ctx.measureText(label.replace(' · ', ' ')).width;
     const longLabelBoost = label.length >= 10 ? 10 : 0;
-    return Math.max(42, Math.min(86, tw / 1.65 + 38 + longLabelBoost)) * sizeScale();
+    return Math.max(radiusFloor(), Math.min(86, tw / 1.65 + 38 + longLabelBoost)) * sizeScale();
   }
 
   // ---- sprite cache: render one pearl marble (+logo+wordmark) per ball -------
@@ -350,6 +399,9 @@ export async function initTechPit() {
 
   // ---- balls -----------------------------------------------------------------
   const balls = [];
+  // Reused per-frame scratch for render centres (constellation lines + sprite blits share
+  // them) — declared once so draw() never allocates inside the rAF loop.
+  const drawCx = [], drawCy = [], drawHalf = [];
   // Cache the tech-panel rect — reading getBoundingClientRect inside the rAF loop
   // forces layout during Lenis scroll and was a big part of the first-visit stutter.
   let techZone = { x: 0, y: 0, w: 160, h: 120 };
@@ -369,6 +421,22 @@ export async function initTechPit() {
 
   function homeFor(index, radius) {
     const zone = techZone;
+    const grouped = groupLookup.get(index);
+    if (grouped && categoryGroups.length > 1 && W >= BP.sm) {
+      const laneSpan = Math.max(1, categoryGroups.length - 1);
+      const itemSpan = Math.max(1, grouped.count - 1);
+      const baseX = zone.x + zone.w * (0.12 + (grouped.groupIndex / laneSpan) * 0.76);
+      const baseY = zone.y + zone.h * (0.26 + (grouped.itemIndex / itemSpan) * 0.48);
+      const jitterX = (seededUnit(index + 11) - 0.5) * Math.min(72, zone.w * 0.08);
+      const jitterY = (seededUnit(index + 53) - 0.5) * Math.min(76, zone.h * 0.12);
+      const drawRadius = radius * 1.42 + 6;
+      return {
+        x: Math.min(Math.max(baseX + jitterX, drawRadius), W - drawRadius),
+        y: Math.min(Math.max(baseY + jitterY, drawRadius), H - drawRadius),
+      };
+    }
+    // 620/980 are PIT-LAYOUT-specific column-count thresholds (how many marbles per row
+    // fit the ball-pit) — intentionally NOT the shared env.js BP layout breakpoints.
     const cols = W < 620 ? 3 : W < 980 ? 4 : 5;
     const rows = Math.ceil(techs.length / cols);
     const col = index % cols;
@@ -397,7 +465,7 @@ export async function initTechPit() {
       });
       Body.setVelocity(body, { x: 0, y: 0 });
       const b = {
-        body, label: tch.label, accent: tch.accent || '#9aa1b2', r, homeIndex: i,
+        body, label: tch.label, accent: tch.accent || '#9aa1b2', category: categoryFor(tch), r, homeIndex: i,
         home,
         phase: seededUnit(i + 41) * Math.PI * 2,
         icon: iconId(tch.label), mono: monogram(tch.label), patch: i % 3 === 1,
@@ -512,7 +580,25 @@ export async function initTechPit() {
   function shouldScopeDragToTechSection(e) {
     return e.pointerType === 'touch' || e.pointerType === 'pen';
   }
+  // A drag is only "active" once committed. Touch/pen start as PROVISIONAL grabs that
+  // don't pin the body or eat scroll — the ball keeps behaving normally until the move
+  // threshold proves a horizontal grab (commit) or a vertical swipe (release for scroll).
+  function activeDrag() { return drag && !drag.provisional ? drag : null; }
+  const TOUCH_COMMIT_PX = 8;   // movement past this (and more horizontal than vertical) commits a touch grab
   function setOrbsInteractive(on) { canvas.style.pointerEvents = on ? 'auto' : 'none'; }
+  function commitDrag(e) {
+    // Promote a provisional touch/pen grab to a real one: NOW capture + eat scroll.
+    drag.provisional = false;
+    drag.moved = true;
+    canvas.classList.add('is-grabbing');
+    wake(drag.ball.body);
+    drag.ball.px = drag.ball.body.position.x;
+    drag.ball.py = drag.ball.body.position.y;
+    setOrbsInteractive(true);
+    if (e && e.cancelable) e.preventDefault();
+    try { canvas.setPointerCapture(drag.id); } catch (_) {}
+    if (!running && isTechVisible() && !document.hidden) start();
+  }
   function ballAt(p) {
     for (let i = balls.length - 1; i >= 0; i--) {
       const b = balls[i];
@@ -523,16 +609,27 @@ export async function initTechPit() {
   }
   function onPointerDown(e) {
     if (isInteractiveTarget(e.target)) return;
-    if (!physicsAwake && isTechVisible()) activatePhysics();
-    if (!physicsAwake) return;
     const p = toWorld(e);
+    const touchLike = e.pointerType === 'touch' || e.pointerType === 'pen';
+    // Touch-wake gating: a finger landing anywhere is NOT enough to wake the pit — an
+    // incidental tap outside #tech must not spin physics up. Gate touch/pen down-wake
+    // behind isInsideTechSection(); the >2px onPointerMove path still wakes otherwise.
+    if (!physicsAwake && isTechVisible() && (!touchLike || isInsideTechSection(p))) activatePhysics();
+    if (!physicsAwake) return;
     pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
     const b = ballAt(p);
-    if (!b) { if (finePointer) burst(p.x, p.y, 22); return; }
+    // Burst scoping: empty-space bursts only inside the tech section (fine pointers).
+    if (!b) { if (finePointer() && isInsideTechSection(p)) burst(p.x, p.y, 22); return; }
     if (shouldScopeDragToTechSection(e) && !isInsideTechSection(p)) return;
+    drag = { ball: b, offX: b.body.position.x - p.x, offY: b.body.position.y - p.y, tx: b.body.position.x, ty: b.body.position.y, vx: 0, vy: 0, id: e.pointerId, gx: p.x, gy: p.y, moved: false, provisional: touchLike };
+    if (touchLike) {
+      // PROVISIONAL: don't preventDefault / capture on down so vertical scroll still works.
+      // commitDrag() (in onPointerMove) eats the scroll only once a horizontal grab is proven.
+      return;
+    }
+    // Mouse: commit immediately, exactly as before.
     e.preventDefault();
     canvas.classList.add('is-grabbing');
-    drag = { ball: b, offX: b.body.position.x - p.x, offY: b.body.position.y - p.y, tx: b.body.position.x, ty: b.body.position.y, vx: 0, vy: 0, id: e.pointerId, gx: p.x, gy: p.y, moved: false };
     wake(b.body);
     setOrbsInteractive(true);
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -545,15 +642,44 @@ export async function initTechPit() {
     lastPointerSample.x = p.x;
     lastPointerSample.y = p.y;
     pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
+    // Provisional touch/pen grab: decide grab-vs-scroll once the finger crosses the
+    // threshold. Horizontal-dominant → commit (eat scroll); vertical-dominant → release
+    // the grab so the page scrolls. Below threshold we do nothing (no preventDefault).
+    if (drag && drag.provisional && e.pointerId === drag.id) {
+      const dx = p.x - drag.gx, dy = p.y - drag.gy;
+      if (Math.hypot(dx, dy) > TOUCH_COMMIT_PX) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          commitDrag(e);
+          const nx = p.x + drag.offX, ny = p.y + drag.offY;
+          drag.vx = nx - drag.tx; drag.vy = ny - drag.ty; drag.tx = nx; drag.ty = ny;
+        } else {
+          drag = null;   // vertical swipe wins — let the page scroll
+        }
+      }
+      return;
+    }
     if (drag && e.pointerId === drag.id) {
       e.preventDefault();
       if (Math.hypot(p.x - drag.gx, p.y - drag.gy) > 6) drag.moved = true;
       const nx = p.x + drag.offX, ny = p.y + drag.offY;
       drag.vx = nx - drag.tx; drag.vy = ny - drag.ty; drag.tx = nx; drag.ty = ny;
-    } else if (finePointer) hoverBall = ballAt(p);
+    } else if (finePointer()) hoverBall = ballAt(p);
   }
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== drag.id)) return;
+    // A provisional touch grab that ends without committing: a genuine tap (pointerup)
+    // still pops the ball, but a pointercancel — fired when the browser takes over for a
+    // scroll — must release silently so scrolling past a ball never pops it.
+    if (drag.provisional) {
+      if (!e || e.type === 'pointercancel') {
+        // pointercancel (scroll takeover) or programmatic end → release silently.
+        try { canvas.releasePointerCapture(drag.id); } catch (_) {}
+        drag = null;
+        setOrbsInteractive(false);
+        return;
+      }
+      drag.provisional = false;   // genuine pointerup tap on a ball: fall through to tap-pop
+    }
     const b = drag.ball; wake(b.body);
     canvas.classList.remove('is-grabbing');
     if (!drag.moved) {
@@ -581,15 +707,49 @@ export async function initTechPit() {
   // The grabbed ball is drawn at its live position (zero interpolation lag).
   function draw(alpha = 1) {
     ctx.clearRect(0, 0, W, H);
-    for (const b of balls) {
-      const dragging = drag && drag.ball === b;
+    const ad = activeDrag();
+    // Resolve each ball's render centre once (incl. the eased focus zoom), so the
+    // constellation lines and the sprite blits agree on the same interpolated position.
+    const n = balls.length;
+    const cxs = drawCx, cys = drawCy, halves = drawHalf;
+    for (let i = 0; i < n; i++) {
+      const b = balls[i];
+      const dragging = ad && ad.ball === b;
       const focused = dragging || b === hoverBall;
       // ease the focus zoom instead of snapping 1 → 1.08 (no pop)
       b.scale += ((focused ? 1.08 : 1) - b.scale) * 0.22;
-      const x = dragging ? b.body.position.x : b.px + (b.body.position.x - b.px) * alpha;
-      const y = dragging ? b.body.position.y : b.py + (b.body.position.y - b.py) * alpha;
-      const half = (b.r + b.spritePad) * b.scale;
-      ctx.drawImage(b.sprite, x - half, y - half, half * 2, half * 2);
+      cxs[i] = dragging ? b.body.position.x : b.px + (b.body.position.x - b.px) * alpha;
+      cys[i] = dragging ? b.body.position.y : b.py + (b.body.position.y - b.py) * alpha;
+      halves[i] = (b.r + b.spritePad) * b.scale;
+    }
+
+    // DATA-CONSTELLATION: faint cyan→magenta links between near marbles, drawn BEFORE
+    // the sprites so the pearls sit on top of the web. Threshold = 2.2× their average
+    // radius. Live-canvas path only — the chip fallback never reaches draw().
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = cxs[i] - cxs[j], dy = cys[i] - cys[j];
+        const dist = Math.hypot(dx, dy);
+        const link = (balls[i].r + balls[j].r) * 0.5 * 2.2;
+        if (dist >= link) continue;
+        const fade = 1 - dist / link;             // closer pairs read a touch stronger
+        const g = ctx.createLinearGradient(cxs[i], cys[i], cxs[j], cys[j]);
+        g.addColorStop(0, `rgba(34,211,238,${(0.12 * fade).toFixed(3)})`);   // cyan
+        g.addColorStop(1, `rgba(255,79,216,${(0.12 * fade).toFixed(3)})`);   // magenta
+        ctx.strokeStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(cxs[i], cys[i]);
+        ctx.lineTo(cxs[j], cys[j]);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    for (let i = 0; i < n; i++) {
+      const b = balls[i], half = halves[i];
+      ctx.drawImage(b.sprite, cxs[i] - half, cys[i] - half, half * 2, half * 2);
     }
   }
 
@@ -620,8 +780,9 @@ export async function initTechPit() {
     if (!physicsAwake) return;
     wakeBlend = Math.min(1, wakeBlend + 0.04);
     const R = STIR_RADIUS();
+    const ad = activeDrag();
     for (const b of balls) {
-      if (drag && drag.ball === b) continue;
+      if (ad && ad.ball === b) continue;
       const body = b.body, pos = body.position, m = body.mass, r = b.r;
       const dx = pos.x - pointer.x, dy = pos.y - pointer.y;
       const d = Math.hypot(dx, dy);
@@ -651,9 +812,10 @@ export async function initTechPit() {
     if (!physicsAwake) return;
     applyForces();
     Engine.update(engine, dt);
-    if (drag) {
-      Body.setPosition(drag.ball.body, { x: drag.tx, y: drag.ty });
-      Body.setVelocity(drag.ball.body, { x: 0, y: 0 });
+    const ad = activeDrag();   // provisional touch grabs don't pin the body (scroll stays free)
+    if (ad) {
+      Body.setPosition(ad.ball.body, { x: ad.tx, y: ad.ty });
+      Body.setVelocity(ad.ball.body, { x: 0, y: 0 });
     }
     for (const b of balls) {
       const pos = b.body.position;
@@ -817,7 +979,23 @@ export async function initTechPit() {
 function showFallback(legend, techs, wrap) {
   if (wrap) wrap.style.display = 'none';
   if (!legend || !techs || !techs.length) return;
+  const categories = CONTENT.techCategories || [];
+  const groups = categories
+    .map((cat) => ({ ...cat, items: techs.filter((t) => t.category === cat.id) }))
+    .filter((cat) => cat.items.length);
   legend.classList.add('is-fallback');
+  if (groups.length) {
+    legend.innerHTML = groups
+      .map((cat) => `
+        <div class="tech__fallback-group">
+          <span class="tech__fallback-label"><i style="background:${cat.accent};box-shadow:0 0 10px ${cat.accent}"></i>${cat.label}</span>
+          <span class="tech__fallback-chips">
+            ${cat.items.map((t) => `<span class="tech__chip"><i style="background:${t.accent};box-shadow:0 0 10px ${t.accent}"></i>${t.label}</span>`).join('')}
+          </span>
+        </div>`)
+      .join('');
+    return;
+  }
   legend.innerHTML = techs
     .map((t) => `<span class="tech__chip"><i style="background:${t.accent};box-shadow:0 0 10px ${t.accent}"></i>${t.label}</span>`)
     .join('');

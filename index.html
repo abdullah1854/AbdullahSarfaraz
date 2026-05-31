@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Abdullah Sarfaraz — Solution Architect & AI Innovation Leader</title>
   <meta name="description" content="Abdullah Sarfaraz — Manager, IT System at Goldbell Group. ERP transformation and AI adoption with 8+ years of Microsoft Dynamics 365 F&O expertise." />
 
@@ -17,6 +17,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Abdullah Sarfaraz" />
   <meta property="og:url" content="https://abdullahsarfaraz.cloud/" />
+  <meta property="og:locale" content="en_SG" />
   <meta property="og:title" content="Abdullah Sarfaraz — Solution Architect & AI Innovation Leader" />
   <meta property="og:description" content="Manager, IT System at Goldbell Group — Microsoft Dynamics 365 F&O, Copilot, and Power Platform automation for real operations." />
   <meta property="og:image" content="https://abdullahsarfaraz.cloud/assets/og-cover.jpg" />
@@ -29,14 +30,19 @@
   <meta name="twitter:title" content="Abdullah Sarfaraz — Solution Architect & AI Innovation Leader" />
   <meta name="twitter:description" content="Manager, IT System at Goldbell Group — D365 F&O, Microsoft Copilot, and Power Platform automation for real operations." />
   <meta name="twitter:image" content="https://abdullahsarfaraz.cloud/assets/og-cover.jpg" />
+  <meta name="twitter:image:alt" content="Abdullah Sarfaraz — Solution Architect & AI Innovation Leader" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preload" as="image" href="./assets/character/head-06.webp?v=4" fetchpriority="high" crossorigin="anonymous" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" /></noscript>
-  <link rel="stylesheet" href="./css/styles.css?v=20260531-techstack-layout" />
+  <link rel="preload" as="image" href="./assets/character/head-05.webp?v=4" fetchpriority="low" crossorigin="anonymous" />
+  <link rel="preload" as="image" href="./assets/character/head-07.webp?v=4" fetchpriority="low" crossorigin="anonymous" />
+  <link rel="preload" as="image" href="./assets/character/portrait-sit.webp?v=3" fetchpriority="low" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" /></noscript>
+  <link rel="stylesheet" href="./css/styles.css?v=20260531-ui-audit" />
+  <link rel="manifest" href="./assets/site.webmanifest" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23050810'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='26' font-family='Arial,sans-serif' font-weight='800' fill='%235eead4'%3EAS%3C/text%3E%3C/svg%3E" />
 
   <!-- Structured data: Person + WebSite (rich results) -->
@@ -48,12 +54,19 @@
         "@type": "Person",
         "@id": "https://abdullahsarfaraz.cloud/#person",
         "name": "Abdullah Sarfaraz",
-        "jobTitle": "Solution Architect & AI Innovation Leader",
+        "jobTitle": "Manager, IT System",
+        "disambiguatingDescription": "Solution Architect & AI Innovation Leader",
         "description": "Manager, IT System at Goldbell Group — ERP transformation and AI adoption with 8+ years of Microsoft Dynamics 365 F&O expertise.",
         "url": "https://abdullahsarfaraz.cloud/",
         "image": "https://abdullahsarfaraz.cloud/assets/og-cover.jpg",
         "email": "mailto:abdullah0094@gmail.com",
-        "worksFor": { "@type": "Organization", "name": "Goldbell Group" },
+        "hasOccupation": {
+          "@type": "Occupation",
+          "name": "Manager, IT System",
+          "occupationLocation": { "@type": "City", "name": "Singapore" },
+          "skills": "Microsoft Dynamics 365 Finance & Operations, Microsoft Copilot, Power Platform, Azure, ERP Strategy, AI Adoption"
+        },
+        "worksFor": { "@type": "Organization", "name": "Goldbell Group", "url": "https://www.goldbellgroup.com/" },
         "address": { "@type": "PostalAddress", "addressLocality": "Singapore", "addressCountry": "SG" },
         "knowsAbout": ["Microsoft Dynamics 365 Finance & Operations", "Microsoft Copilot", "Power Platform", "Azure", "ERP Strategy", "AI Adoption"],
         "sameAs": [
@@ -77,8 +90,8 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
       "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js",
       "gsap/ScrollTrigger": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger.js",
       "matter-js": "https://cdn.jsdelivr.net/npm/matter-js@0.20.0/+esm",
@@ -111,11 +124,30 @@
   <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-bar"></span></div>
 
   <main id="main-content">
+    <noscript>
+      <style>
+        #loader,
+        #webgl,
+        #tech-orbs-canvas,
+        .scroll-progress,
+        .scroll-cue,
+        .social-rail,
+        .resume-link {
+          display: none !important;
+        }
+      </style>
+      <div class="noscript-fallback" style="max-width:48rem;margin:0 auto;padding:6rem 1.5rem;color:#e7ecf2;font-family:'Geist',system-ui,sans-serif">
+        <h1 style="margin:0 0 .75rem">Abdullah Sarfaraz</h1>
+        <p style="margin:0 0 1rem;font-weight:600">Solution Architect &amp; AI Innovation Leader</p>
+        <p style="margin:0;line-height:1.6">Manager, IT System at Goldbell Group — driving ERP transformation and AI adoption with 8+ years of Microsoft Dynamics 365 F&amp;O expertise.</p>
+      </div>
+    </noscript>
     <section id="hero" class="section hero" data-scene="hero">
       <div class="hero__left">
         <p class="hero__eyebrow" data-reveal></p>
         <h1 class="hero__name"></h1>
         <p class="hero__subtitle" id="hero-subtitle" data-reveal></p>
+        <p class="hero__badge" id="hero-badge" data-reveal></p>
       </div>
       <div class="hero__right">
         <p class="hero__role-top" data-reveal></p>
@@ -154,14 +186,17 @@
           <p id="work-intro" data-reveal></p>
           <a id="work-all" class="text-link" href="#" target="_blank" rel="noopener" data-reveal></a>
         </div>
-        <div class="work-carousel" id="work-carousel" role="group" aria-roledescription="carousel" aria-label="Selected work" tabindex="0" data-reveal>
-          <div class="work-carousel__viewport" id="work-viewport" aria-live="polite"></div>
+        <div class="work-carousel" id="work-carousel" role="group" aria-roledescription="carousel" aria-label="Selected work" tabindex="0" aria-keyshortcuts="ArrowLeft ArrowRight" aria-describedby="carousel-howto" data-reveal>
+          <span id="carousel-status" class="visually-hidden" aria-live="polite"></span>
+          <span id="carousel-howto" class="visually-hidden">Use the left and right arrow keys to move between projects.</span>
+          <div class="work-carousel__viewport" id="work-viewport"></div>
           <div class="work-carousel__controls">
             <button class="icon-button" id="project-prev" type="button" aria-label="Previous project"></button>
             <div class="work-carousel__dots" id="project-dots" role="group" aria-label="Project carousel pagination"></div>
             <button class="icon-button" id="project-next" type="button" aria-label="Next project"></button>
           </div>
         </div>
+        <div class="project-index" id="project-index" aria-label="Project overview" data-reveal></div>
       </div>
     </section>
 
@@ -188,6 +223,6 @@
     </section>
   </main>
 
-  <script type="module" src="./js/main.js?v=20260531-tech-avatar"></script>
+  <script type="module" src="./js/main.js?v=20260531-ui-audit"></script>
 </body>
 </html>
