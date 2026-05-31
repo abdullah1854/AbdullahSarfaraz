@@ -500,6 +500,13 @@ export async function initTechPit() {
   function isInteractiveTarget(target) {
     return target && target.closest('a, button, input, textarea, select, [role="button"], .header, .nav, .social-rail, .resume-link, .work-carousel');
   }
+  function isInsideTechSection(p) {
+    const r = anchor.getBoundingClientRect();
+    return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+  }
+  function shouldScopeDragToTechSection(e) {
+    return e.pointerType === 'touch' || e.pointerType === 'pen';
+  }
   function setOrbsInteractive(on) { canvas.style.pointerEvents = on ? 'auto' : 'none'; }
   function ballAt(p) {
     for (let i = balls.length - 1; i >= 0; i--) {
@@ -517,6 +524,7 @@ export async function initTechPit() {
     pointer.x = p.x; pointer.y = p.y; pointer.inside = true;
     const b = ballAt(p);
     if (!b) { if (finePointer) burst(p.x, p.y, 22); return; }
+    if (shouldScopeDragToTechSection(e) && !isInsideTechSection(p)) return;
     e.preventDefault();
     canvas.classList.add('is-grabbing');
     drag = { ball: b, offX: b.body.position.x - p.x, offY: b.body.position.y - p.y, tx: b.body.position.x, ty: b.body.position.y, vx: 0, vy: 0, id: e.pointerId, gx: p.x, gy: p.y, moved: false };
