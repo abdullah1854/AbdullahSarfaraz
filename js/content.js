@@ -63,7 +63,7 @@ export const CONTENT = {
         {
           title: 'Manager, IT System',
           period: 'Jul 2025 — Present',
-          duration: '4 mos',
+          duration: '11 mos',
           current: true,
           points: [
             'Spearheaded ERP and AI initiatives, aligning D365 F&O customization with business strategy.',
