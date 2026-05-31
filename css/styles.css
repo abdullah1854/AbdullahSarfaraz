@@ -8,7 +8,6 @@
 
 :root {
   --bg: #050810;
-  --bg-2: #0a0e17;
   --surface: rgba(255, 255, 255, 0.035);
   --surface-line: rgba(255, 255, 255, 0.1);
   --cyan: #5eead4;
@@ -16,7 +15,6 @@
   --blue: #60a5fa;
   --ink: #f6f8fb;
   --muted: rgba(246, 248, 251, 0.6);
-  --muted-2: rgba(246, 248, 251, 0.6);
   --focus: #5eead4;
   --maxw: 1320px;
   --chrome-pad: clamp(18px, 3vw, 46px);
@@ -277,6 +275,15 @@ html.lenis, html.lenis body { height: auto; }
 }
 .nav__link:hover, .nav__link.is-active { color: var(--ink); }
 .nav__link:hover::after, .nav__link.is-active::after { transform: scaleX(1); }
+/* Invisible 44px-tall hit area (WCAG 2.5.5) — enlarges the pointer/keyboard target
+   without moving the text or the animated underline. */
+.nav__link::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
 
 .social-rail {
   position: fixed;
@@ -300,9 +307,9 @@ html.lenis, html.lenis body { height: auto; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   color: var(--muted);
   transition: color 200ms ease, transform 200ms ease, background 200ms ease;
 }
@@ -317,6 +324,7 @@ html.lenis, html.lenis body { height: auto; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-height: 44px;
   padding: 12px 20px;
   border-radius: 999px;
   border: 1px solid var(--surface-line);
@@ -596,7 +604,7 @@ main { position: relative; z-index: 2; }
   font-size: 0.66rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--muted-2);
+  color: var(--muted);
 }
 .scroll-cue i {
   width: 1px; height: 34px;
@@ -768,6 +776,7 @@ main { position: relative; z-index: 2; }
 }
 .work__intro p { color: var(--muted); font-size: var(--fs-lead); line-height: var(--lh-body); margin: 1.15rem 0 1.55rem; max-width: 44ch; }
 .text-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -778,6 +787,8 @@ main { position: relative; z-index: 2; }
   padding-bottom: 3px;
   transition: gap 200ms ease, border-color 200ms ease, text-shadow 200ms ease;
 }
+/* 44px-tall invisible hit area (WCAG 2.5.5) without moving the underline */
+.text-link::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .text-link:hover { gap: 14px; border-color: var(--cyan); text-shadow: 0 0 12px rgba(94,234,212,0.25); }
 
 .work-carousel { position: relative; min-width: 0; overflow: clip; }
@@ -828,13 +839,14 @@ main { position: relative; z-index: 2; }
   transform: rotate(-45deg);
   box-shadow: -1px 1px 8px rgba(94, 234, 212, 0.35);
 }
-.work-card__stack { margin-top: auto; color: var(--muted-2); font-size: var(--fs-small); letter-spacing: 0.02em; }
+.work-card__stack { margin-top: auto; color: var(--muted); font-size: var(--fs-small); letter-spacing: 0.02em; }
 
 .work-carousel__controls { display: flex; align-items: center; gap: 18px; margin-top: 1.4rem; }
 .icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   width: 44px; height: 44px;
   border-radius: 50%;
   border: 1px solid var(--surface-line);
@@ -846,17 +858,26 @@ main { position: relative; z-index: 2; }
 .icon-button:hover { border-color: rgba(94, 234, 212, 0.65); background: rgba(94, 234, 212, 0.09); box-shadow: 0 0 0 1px rgba(94,234,212,0.2); }
 .icon-button:active { transform: scale(0.94); }
 .icon-button svg { width: 18px; height: 18px; }
-.work-carousel__dots { display: flex; gap: 8px; }
+.work-carousel__dots { display: flex; align-items: center; gap: 4px; }
+/* 44x44 tap target (WCAG 2.5.5); the visible 8px dot / 22px active pill is drawn
+   by ::before so the look is unchanged while the hit area is touch-friendly. */
 .work-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
+  width: 30px; height: 44px;
   border: 0;
   padding: 0;
-  background: rgba(255, 255, 255, 0.18);
+  background: transparent;
+  display: inline-grid;
+  place-items: center;
   cursor: pointer;
-  transition: background 200ms ease, transform 200ms ease, width 200ms ease, box-shadow 200ms ease;
 }
-.work-dot.is-active { width: 22px; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow: 0 0 0 3px rgba(94,234,212,0.15); }
+.work-dot::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 200ms ease, width 200ms ease, box-shadow 200ms ease;
+}
+.work-dot.is-active::before { width: 22px; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow: 0 0 0 3px rgba(94,234,212,0.15); }
 
 /* =============================================================================
    Tech — pearl pit
@@ -878,7 +899,7 @@ main { position: relative; z-index: 2; }
   font-size: var(--fs-eyebrow);
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
-  color: var(--muted-2);
+  color: var(--muted);
   pointer-events: none;
 }
 .tech__legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.4rem; }
@@ -922,11 +943,12 @@ main { position: relative; z-index: 2; }
 }
 .contact-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .contact-col a, .contact-col span { color: var(--muted); font-size: var(--fs-body); line-height: var(--lh-body); transition: color var(--t-base) ease; }
-.contact-col a { display: inline-flex; align-items: center; gap: 6px; }
-.contact-col a span { color: var(--muted-2); transition: transform 200ms ease; }
+.contact-col a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.contact-col a span { color: var(--muted); transition: transform 200ms ease; }
 .contact-col a:hover { color: var(--cyan); }
 .contact-col a:hover span { color: var(--cyan); transform: translate(2px, -2px); }
 .contact-email {
+  position: relative;
   display: inline-block;
   width: fit-content;
   max-width: 100%;
@@ -944,6 +966,8 @@ main { position: relative; z-index: 2; }
   transition: filter var(--t-base) ease, opacity var(--t-base) ease;
 }
 .contact-email:hover { filter: drop-shadow(0 0 36px rgba(255, 79, 216, 0.26)); }
+/* ensure a >=44px tap height on mobile where the email renders smaller */
+.contact-email::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 
 .footer {
   display: flex;
@@ -1053,7 +1077,7 @@ main { position: relative; z-index: 2; }
     width: 100dvw;
     max-width: 100dvw;
   }
-  .brand { width: 38px; height: 38px; border-radius: 10px; }
+  .brand { width: 44px; height: 44px; border-radius: 12px; }
   .nav {
     grid-column: 1 / -1;
     width: calc(100dvw - (var(--chrome-pad) * 2));
